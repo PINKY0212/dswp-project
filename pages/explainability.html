@@ -521,7 +521,7 @@
 
     <div class="instance-selector">
       <label><strong>Select Date & Time:</strong></label>
-      <input type="date" id="instanceDate" value="2018-01-02" min="2015-01-08" max="2018-09-30">
+      <input type="date" id="instanceDate" value="2018-01-02" min="2018-01-02" max="2018-09-30">
       <select id="instanceHour">
         <option value="0">00:00</option>
         <option value="1">01:00</option>
@@ -550,7 +550,7 @@
       </select>
       <button onclick="loadInstanceExplanation()" id="explainBtn"><i class="bi bi-search"></i> Predict Load</button>
       <p class="muted" style="margin: 10px 0 0 0; font-size: 0.85em; text-align: center;">
-        Date and Time Available: 2015-01-08 → 2018-09-30
+        Date and Time Available: 2018-01-02 → 2018-09-30
       </p>
     </div>
 
@@ -577,18 +577,6 @@
             <div class="label">Type</div>
             <div class="value" id="peakLabel" style="font-size:16px;">–</div>
           </div>
-        </div>
-
-        <h3 style="margin:20px 0 10px; text-align:left;">Prediction Breakdown</h3>
-        <div class="base-value">
-          Base Value (Expected): <span id="baseValue">–</span> MW
-        </div>
-        <div style="margin:12px 0; font-weight:600; text-align:center;">+ Feature Contributions</div>
-        <div class="feature-contributions" id="featureContributions">
-          <!-- Feature contributions will be loaded here -->
-        </div>
-        <div class="final-prediction">
-          Final Prediction: <span id="finalPrediction">–</span> MW
         </div>
       </div>
     </div>
@@ -1471,160 +1459,34 @@
     });
   });
 
-  // Instance-level explanation
-  // Embedded sample data to avoid CORS issues when opening file directly
-  const embeddedPredictions = [
-    {date: "2018-01-02 00:00:00+00:00", actual: 39033.0, predicted: 42379.92, error: -3346.92, is_peak: "False"},
-    {date: "2018-01-02 08:00:00+00:00", actual: 62933.0, predicted: 63278.15, error: -345.14, is_peak: "False"},
-    {date: "2018-01-02 10:00:00+00:00", actual: 65911.0, predicted: 66623.14, error: -712.14, is_peak: "False"},
-    {date: "2018-01-03 09:00:00+00:00", actual: 69342.0, predicted: 69699.04, error: -357.04, is_peak: "True"},
-    {date: "2018-01-03 10:00:00+00:00", actual: 70764.0, predicted: 70324.35, error: 439.65, is_peak: "True"},
-    {date: "2018-02-02 07:00:00+00:00", actual: 70968.0, predicted: 70100.27, error: 867.73, is_peak: "True"},
-    {date: "2018-03-10 16:00:00+00:00", actual: 55988.0, predicted: 56021.29, error: -33.29, is_peak: "False"},
-    {date: "2018-09-19 08:00:00+00:00", actual: 68409.0, predicted: 68725.51, error: -316.51, is_peak: "False"}
-  ];
+  // Instance-level predictions (loaded from CSV)
+  let predictionsCache = null;
 
-  const embeddedSHAP = {
-    "2018-01-02 00:00:00+00:00": {
-      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 850.0,
-      "SHAP_DE_amprion_load_actual_entsoe_transparency": 720.0,
-      "SHAP_target_load_lag_1": 450.0,
-      "SHAP_target_load_same_hour_last_week": 380.0,
-      "SHAP_is_weekend": -120.0,
-      "SHAP_target_load_rolling_mean_3": 280.0,
-      "SHAP_solar_proxy": -95.0,
-      "SHAP_target_load_ema_6": 220.0,
-      "SHAP_target_load_rolling_mean_12": 180.0,
-      "SHAP_is_monday": 150.0,
-      "SHAP_temperature_pop_wtd": 320.0,
-      "SHAP_heating_degree_days": 280.0,
-      "SHAP_wind_speed_pop_wtd": -150.0,
-      "SHAP_humidity_pop_wtd": 95.0,
-      "SHAP_cloud_cover_pop_wtd": -80.0
-    },
-    "2018-01-02 08:00:00+00:00": {
-      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 1250.0,
-      "SHAP_DE_amprion_load_actual_entsoe_transparency": 1100.0,
-      "SHAP_target_load_lag_1": 680.0,
-      "SHAP_target_load_same_hour_last_week": 520.0,
-      "SHAP_is_monday": 380.0,
-      "SHAP_target_load_rolling_mean_12": 420.0,
-      "SHAP_solar_proxy": 180.0,
-      "SHAP_target_load_ema_24": 350.0,
-      "SHAP_target_load_rolling_mean_3": 310.0,
-      "SHAP_target_load_ema_6": 290.0,
-      "SHAP_temperature_pop_wtd": 450.0,
-      "SHAP_heating_degree_days": 380.0,
-      "SHAP_wind_speed_pop_wtd": -120.0,
-      "SHAP_humidity_pop_wtd": 110.0,
-      "SHAP_solar_radiation_surface_pop_wtd": 85.0
-    },
-    "2018-01-02 10:00:00+00:00": {
-      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 1450.0,
-      "SHAP_DE_amprion_load_actual_entsoe_transparency": 1280.0,
-      "SHAP_target_load_lag_1": 820.0,
-      "SHAP_target_load_same_hour_last_week": 650.0,
-      "SHAP_is_monday": 450.0,
-      "SHAP_target_load_rolling_mean_12": 520.0,
-      "SHAP_solar_proxy": 220.0,
-      "SHAP_target_load_ema_24": 480.0,
-      "SHAP_target_load_rolling_mean_3": 380.0,
-      "SHAP_target_load_ema_6": 350.0,
-      "SHAP_temperature_pop_wtd": 520.0,
-      "SHAP_heating_degree_days": 420.0,
-      "SHAP_wind_speed_pop_wtd": -100.0,
-      "SHAP_humidity_pop_wtd": 125.0,
-      "SHAP_solar_radiation_surface_pop_wtd": 120.0
-    },
-    "2018-01-03 09:00:00+00:00": {
-      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 1650.0,
-      "SHAP_DE_amprion_load_actual_entsoe_transparency": 1420.0,
-      "SHAP_target_load_lag_1": 980.0,
-      "SHAP_target_load_same_hour_last_week": 780.0,
-      "SHAP_is_monday": 520.0,
-      "SHAP_target_load_rolling_mean_12": 680.0,
-      "SHAP_solar_proxy": 350.0,
-      "SHAP_target_load_ema_24": 580.0,
-      "SHAP_target_load_rolling_mean_3": 450.0,
-      "SHAP_target_load_ema_6": 420.0,
-      "SHAP_temperature_pop_wtd": 580.0,
-      "SHAP_heating_degree_days": 480.0,
-      "SHAP_wind_speed_pop_wtd": -90.0,
-      "SHAP_humidity_pop_wtd": 140.0,
-      "SHAP_solar_radiation_surface_pop_wtd": 150.0
-    },
-    "2018-01-03 10:00:00+00:00": {
-      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 1800.0,
-      "SHAP_DE_amprion_load_actual_entsoe_transparency": 1580.0,
-      "SHAP_target_load_lag_1": 1100.0,
-      "SHAP_target_load_same_hour_last_week": 880.0,
-      "SHAP_is_monday": 580.0,
-      "SHAP_target_load_rolling_mean_12": 780.0,
-      "SHAP_solar_proxy": 420.0,
-      "SHAP_target_load_ema_24": 680.0,
-      "SHAP_target_load_rolling_mean_3": 520.0,
-      "SHAP_target_load_ema_6": 480.0,
-      "SHAP_temperature_pop_wtd": 620.0,
-      "SHAP_heating_degree_days": 520.0,
-      "SHAP_wind_speed_pop_wtd": -85.0,
-      "SHAP_humidity_pop_wtd": 150.0,
-      "SHAP_solar_radiation_surface_pop_wtd": 180.0
-    },
-    "2018-02-02 07:00:00+00:00": {
-      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 720.0,
-      "SHAP_DE_amprion_load_actual_entsoe_transparency": 840.0,
-      "SHAP_target_load_lag_1": 540.0,
-      "SHAP_target_load_same_hour_last_week": 420.0,
-      "SHAP_is_friday": 360.0,
-      "SHAP_target_load_rolling_mean_3": 480.0,
-      "SHAP_solar_proxy": 180.0,
-      "SHAP_target_load_ema_6": 300.0,
-      "SHAP_target_load_rolling_mean_12": 350.0,
-      "SHAP_target_load_ema_24": 280.0,
-      "SHAP_temperature_pop_wtd": 380.0,
-      "SHAP_heating_degree_days": 320.0,
-      "SHAP_wind_speed_pop_wtd": -110.0,
-      "SHAP_humidity_pop_wtd": 100.0,
-      "SHAP_cloud_cover_pop_wtd": -60.0,
-      "SHAP_precipitation_pop_wtd": -45.0
-    },
-    "2018-03-10 16:00:00+00:00": {
-      "SHAP_DE_transnetbw_load_actual_entsoe_transparency": 180.0,
-      "SHAP_DE_tennet_wind_onshore_generation_actual": 85.0,
-      "SHAP_target_load_rolling_mean_3": 240.0,
-      "SHAP_target_load_ema_6": 60.0,
-      "SHAP_target_load_same_hour_last_week": 120.0,
-      "SHAP_is_weekend": 240.0,
-      "SHAP_target_load_rolling_mean_12": 300.0,
-      "SHAP_solar_proxy": 60.0,
-      "SHAP_target_load_ema_24": 150.0,
-      "SHAP_target_load_lag_1": 200.0,
-      "SHAP_temperature_pop_wtd": 220.0,
-      "SHAP_heating_degree_days": 180.0,
-      "SHAP_wind_speed_pop_wtd": -70.0,
-      "SHAP_humidity_pop_wtd": 85.0,
-      "SHAP_solar_radiation_surface_pop_wtd": 95.0,
-      "SHAP_cloud_cover_pop_wtd": -50.0
-    },
-    "2018-09-19 08:00:00+00:00": {
-      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 1260.0,
-      "SHAP_DE_amprion_load_actual_entsoe_transparency": 840.0,
-      "SHAP_DE_transnetbw_load_actual_entsoe_transparency": 540.0,
-      "SHAP_DE_tennet_wind_onshore_generation_actual": 300.0,
-      "SHAP_target_load_lag_1": 1740.0,
-      "SHAP_target_load_same_hour_last_week": 600.0,
-      "SHAP_is_weekend": 600.0,
-      "SHAP_target_load_rolling_mean_12": 540.0,
-      "SHAP_target_load_rolling_mean_3": 420.0,
-      "SHAP_target_load_ema_6": 380.0,
-      "SHAP_temperature_pop_wtd": -180.0,
-      "SHAP_cooling_degree_days": -120.0,
-      "SHAP_wind_speed_pop_wtd": 90.0,
-      "SHAP_humidity_pop_wtd": -95.0,
-      "SHAP_solar_radiation_surface_pop_wtd": 150.0,
-      "SHAP_cloud_cover_pop_wtd": -75.0
+  function parseCsvToObjects(text) {
+    const lines = text.trim().split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(",").map(h => h.trim());
+    return lines.slice(1).map((line) => {
+      const cols = line.split(",");
+      const row = {};
+      headers.forEach((h, i) => {
+        row[h] = cols[i];
+      });
+      return row;
+    });
+  }
+
+  async function loadPredictionsCsv() {
+    if (predictionsCache) return predictionsCache;
+    const res = await fetch("../saved_model_outputs/lstm_outputs/lstm_predictions.csv", { cache: "no-store" });
+    if (!res.ok) {
+      throw new Error("Could not load lstm_predictions.csv");
     }
-  };
+    const text = await res.text();
+    predictionsCache = parseCsvToObjects(text);
+    return predictionsCache;
+  }
+
 
   async function loadInstanceExplanation(){
     const explainBtn = document.getElementById('explainBtn');
@@ -1644,27 +1506,15 @@
     const targetTimestamp = `${dateInput} ${hourStr}:00:00+00:00`;
 
     try {
-      let prediction = embeddedPredictions.find(p => p.date === targetTimestamp);
+      const predictions = await loadPredictionsCsv();
+      let prediction = predictions.find(p => p.date === targetTimestamp);
       if (!prediction) {
         // Try without timezone
         const targetNoTz = targetTimestamp.replace('+00:00', '');
-        prediction = embeddedPredictions.find(p => p.date && p.date.replace('+00:00', '') === targetNoTz);
+        prediction = predictions.find(p => p.date && p.date.replace('+00:00', '') === targetNoTz);
       }
       if (!prediction) {
-        alert(`No prediction found for ${targetTimestamp}.`);
-        return;
-      }
-
-      // Get SHAP values for this timestamp
-      let shapRow = embeddedSHAP[targetTimestamp];
-      if (!shapRow) {
-        // Try without timezone
-        const targetNoTz = targetTimestamp.replace('+00:00', '');
-        shapRow = embeddedSHAP[targetNoTz] || Object.keys(embeddedSHAP).find(k => k.replace('+00:00', '') === targetNoTz ? embeddedSHAP[k] : null);
-        if (typeof shapRow === 'string') shapRow = embeddedSHAP[shapRow];
-      }
-      if (!shapRow) {
-        alert(`SHAP values not available for ${targetTimestamp}.\n\nPlease try one of the available sample dates.`);
+        alert(`No prediction found for ${targetTimestamp}.\n\nAvailable range: 2018-01-02 to 2018-09-30.`);
         return;
       }
 
@@ -1680,47 +1530,6 @@
       document.getElementById('peakLabel').textContent = isPeak ? 'Peak Load' : 'Normal Load';
       document.getElementById('peakLabel').style.color = isPeak ? '#ef4444' : '#10b981';
 
-      // Extract and sort feature contributions
-      const contributions = [];
-      Object.keys(shapRow).forEach(key => {
-        const shapValue = shapRow[key];
-        if (typeof shapValue === 'number' && shapValue !== 0) {
-          // SHAP values are in MW units (same as predictions)
-          // The embedded values are already scaled appropriately
-          const featureName = key.replace('SHAP_', '').replace(/_/g, ' ');
-          contributions.push({
-            feature: featureName,
-            value: shapValue
-          });
-        }
-      });
-
-      // Calculate base value: prediction - sum of all SHAP contributions
-      const sumContributions = contributions.reduce((sum, c) => sum + c.value, 0);
-      const baseValue = predicted - sumContributions;
-      document.getElementById('baseValue').textContent = baseValue.toFixed(2);
-
-      // Sort by absolute value and take top 15
-      contributions.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
-      const topContributions = contributions.slice(0, 15);
-
-      // Display contributions
-      const contribDiv = document.getElementById('featureContributions');
-      contribDiv.innerHTML = topContributions.map(c => {
-        const isPositive = c.value > 0;
-        return `
-          <div class="contribution-row ${isPositive ? 'positive' : 'negative'}">
-            <span class="contribution-feature">${c.feature}</span>
-            <span class="contribution-value ${isPositive ? 'positive' : 'negative'}">
-              ${isPositive ? '+' : ''}${c.value.toFixed(2)} MW
-            </span>
-          </div>
-        `;
-      }).join('');
-
-      // Final prediction (base + sum of contributions)
-      document.getElementById('finalPrediction').textContent = predicted.toFixed(2);
-
       // Show explanation
       loadingState.style.display = 'none';
       instanceExplanation.style.display = 'block';
@@ -1731,8 +1540,9 @@
       loadingState.style.display = 'none';
       alert(`Error loading explanation: ${e.message}\n\nPlease check the browser console (F12) for more details.`);
     } finally {
+      loadingState.style.display = 'none';
       explainBtn.disabled = false;
-      explainBtn.innerHTML = '<i class="bi bi-search"></i> Explain This Prediction';
+      explainBtn.innerHTML = '<i class="bi bi-search"></i> Predict Load';
     }
   }
 

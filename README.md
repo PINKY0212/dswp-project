@@ -377,7 +377,7 @@ This analysis supports grid operators in trusting and debugging model outputs.
 │   ├── style.css                     # Styling
 │   ├── app.js                        # JavaScript functionality
 │
-├── Short Term Electricity Demand Forecasting.html  # Main dashboard
+├── ShortTermElectricityDemandForecasting.html  # Main dashboard
 ├── README.md                         # This file
 └── .gitignore                        # Git ignore rules
 ```
@@ -423,7 +423,7 @@ This analysis supports grid operators in trusting and debugging model outputs.
    - Each notebook saves outputs to `saved_model_outputs/`
 
 4. **View Results**
-   - Open `Short Term Electricity Demand Forecasting.html` in a web browser
+   - Open `ShortTermElectricityDemandForecasting.html` in a web browser
    - Or navigate individual pages in `pages/` directory
 
 ### Output Files
