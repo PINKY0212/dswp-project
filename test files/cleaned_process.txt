@@ -1,0 +1,31 @@
+1.Started from the OPSD time_series_60min_singleindex.csv file (hourly resolution, multi-country, multi-area) and focused only on Germany for the first modelling stage.
+
+2.Selected country-level German columns only: DE_* variables plus cet_cest_timestamp, deliberately dropping control-area / bidding-zone columns (DE_50hertz_*, DE_amprion_*, DE_tennet_*, DE_transnetbw_*, DE_LU_*) to keep a clean, consistent national signal for modelling.
+
+3.Excluded all DE_LU_* columns (including DE_LU_price_day_ahead) because they are a DE+Luxembourg bidding-zone aggregate with ~65 % missing values and not pure German country-level data; this keeps the project design clearly “Germany-only, country-level”.
+
+4.Set a tz-aware time index: used utc_timestamp as the DatetimeIndex in UTC, verified that it is timezone-aware and aligned with cet_cest_timestamp (local time information still available as a column if needed).
+
+5.Verified continuous hourly coverage for Germany: built a full hourly UTC date range between min and max timestamps and confirmed that there are no missing timestamps (no structural gaps in the time axis).
+
+6.Analysed missingness by year and found that 2014 and 2020 have structural problems (100 % NaN for some capacities/profiles), so restricted the dataset to 2015-01-01 to 2019-12-31 and stored this slice in a dedicated DataFrame for further work.
+
+7.Recomputed missingness for 2015–2019 and confirmed that all remaining columns have very low missing ratios (≤ ~0.3 %), with complete coverage for the main target DE_load_actual_entsoe_transparency.
+
+8.Applied forward-fill + backfill imputation for structurally slow-changing variables:
+
+Target and forecast: DE_load_actual_entsoe_transparency, DE_load_forecast_entsoe_transparency
+
+Capacities: DE_solar_capacity, DE_wind_capacity, DE_wind_offshore_capacity, DE_wind_onshore_capacity
+This reflects realistic operations where capacities and load forecasts change smoothly or stepwise, not randomly.
+
+9.Applied time-based linear interpolation for physical generation and profile series:
+
+DE_solar_generation_actual, DE_wind_generation_actual, DE_wind_offshore_generation_actual, DE_wind_onshore_generation_actual
+
+DE_solar_profile, DE_wind_profile, DE_wind_offshore_profile, DE_wind_onshore_profile
+to obtain smooth, physically plausible curves while filling short gaps.
+
+10.Performed distribution checks (count/mean/std/min/max/quantiles) for key series (especially solar and wind generation) to confirm that after imputation the values are within realistic ranges and show expected patterns (e.g. many zeros for solar at night, high variability in wind).
+
+11.Built a per-column data-quality summary table (for the cleaned de_imp/de_country): dtype, number of missing values, missing ratio, number of negatives, number of zeros, min, max, mean, std — and confirmed that:

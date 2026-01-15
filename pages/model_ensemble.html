@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ensemble Model: Multi-Model Combination</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css" />
+
+  <style>
+    /* Header Styling */
+    .topbar {
+      height: 90px;
+      overflow: visible;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 2px solid rgba(0, 120, 255, 0.1);
+    }
+    .content { padding-top: 112px; }
+    .topbar-center {
+      font-size: 2em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: #0078ff;
+      background: linear-gradient(135deg, #0078ff 0%, #3b82f6 50%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      display: inline-block;
+      padding: 8px 24px;
+      margin: 0 auto;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+    .topbar-center::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #0078ff, #3b82f6, #0078ff, transparent);
+      border-radius: 2px;
+      opacity: 0.5;
+      animation: shimmer-line 3s ease-in-out infinite;
+    }
+    @keyframes shimmer-line { 0%,100%{opacity:0.3;} 50%{opacity:0.7;} }
+    .icon-btn { z-index: 1002; position: relative; }
+    body { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); }
+    html { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); }
+    .header-logo { height: 150px; width: auto; margin-right: 1px; margin-left: -10px; object-fit: contain; }
+
+    /* Dashboard layout */
+    .dash{
+      display:block;
+    }
+
+    /* KPI Grid */
+    .kpi-grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    @media (max-width: 980px){ .kpi-grid{ grid-template-columns: 1fr; } }
+    .kpi{
+      border: 2px solid #3b82f6;
+      border-radius: 10px;
+      padding: 6px 8px;
+      background: rgba(255,255,255,0.25);
+    }
+    .kpi .label{ color: var(--text-muted); font-size: 14px; font-weight: 700; }
+    .kpi .value{ font-size: 16px; margin-top: 2px; }
+
+    /* Tabs */
+    .tabs { display:flex; flex-wrap:wrap; gap:8px; margin: 10px 0 0; justify-content:center; }
+    .tab{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 10px; border:1px solid var(--border); border-radius: 999px;
+      text-decoration:none; color: var(--text-main); background:#fff;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease, color .12s ease, border-color .12s ease;
+    }
+    .tab:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.15);
+      border-color: #3b82f6;
+    }
+    .tab.active{ background: var(--primary); border-color: var(--primary); color:#fff; }
+
+    /* Pills */
+    .pill-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top: 12px; justify-content:center; }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border:1px solid var(--border);
+      border-radius: 999px;
+      background:#fff;
+      color: var(--text-main);
+      text-decoration:none;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+    .pill:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.15);
+      border-color: #3b82f6;
+    }
+    .pill i{ color: var(--primary); }
+
+    /* Summary box */
+    .summary-box{
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.35);
+      padding: 14px;
+      margin-top: 14px;
+      text-align:left;
+    }
+
+    /* Metrics panels */
+    .grid-2{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:14px; margin-top: 12px; }
+    @media (max-width: 980px){ .grid-2 { grid-template-columns: 1fr; } }
+    .panel{
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.35);
+      padding: 14px;
+      box-shadow: 0 10px 26px rgba(0,0,0,0.06);
+      transition: all 0.3s ease;
+    }
+    .panel:hover{
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(59, 130, 246, 0.25), 0 6px 16px rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+    .metrics { width:100%; border-collapse: collapse; margin-top: 10px; border:1px solid var(--border); border-radius: 10px; overflow:hidden; background:#fff; }
+    .metrics th, .metrics td { padding: 10px 12px; border-bottom:1px solid var(--border); text-align:left; }
+    .metrics th { background:#f9fafb; }
+    .metrics tr:last-child td { border-bottom:none; }
+    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+    @media (max-width: 768px){ .metrics-grid { grid-template-columns: 1fr; } }
+    .metrics-col { border:1px solid var(--border); border-radius: 10px; overflow:hidden; background:#fff; }
+    .metrics-col-header { padding: 10px 12px; background:#f9fafb; font-weight: 700; border-bottom:1px solid var(--border); }
+    .metrics-col table { width:100%; border-collapse: collapse; }
+    .metrics-col table td { padding: 8px 12px; border-bottom:1px solid var(--border); }
+    .metrics-col table tr:last-child td { border-bottom:none; }
+
+    /* Plot grid - modern cardplot style */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 12px;
+    }
+    .cardplot{
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow:hidden;
+      cursor:pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+      position: relative;
+    }
+    .cardplot::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.02) 0%, rgba(249, 250, 251, 0.5) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .cardplot:hover::before { opacity: 1; }
+    .cardplot:hover{
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 12px 32px rgba(0, 120, 255, 0.25), 0 6px 16px rgba(0, 120, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+      border-color: rgba(0, 120, 255, 0.4);
+    }
+    @media (max-width: 1200px){
+      .grid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .cardplot-head{
+      padding: 16px 18px;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #f3f4f6;
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.04) 0%, rgba(249, 250, 251, 0.8) 100%);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 2;
+      text-align: left;
+    }
+    .cardplot:hover .cardplot-head{
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.08) 0%, rgba(239, 246, 255, 0.9) 100%);
+      border-bottom-color: rgba(0, 120, 255, 0.15);
+    }
+    .cardplot-title{
+      font-weight: 600;
+      margin:0;
+      font-size: 20px;
+      color: #111827;
+      letter-spacing: -0.01em;
+      transition: color 0.3s ease;
+      text-align: left;
+    }
+    .cardplot:hover .cardplot-title { color: #0078ff; }
+    .cardplot-sub{
+      color: #9ca3af;
+      margin-top: 6px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .cardplot-body{
+      padding: 12px 14px 14px;
+      position: relative;
+      z-index: 2;
+    }
+    .plot-img{
+      width: 100%;
+      height: auto;
+      display:block;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #fff;
+      transition: transform 0.3s ease;
+    }
+    .cardplot:hover .plot-img { transform: scale(1.02); }
+
+    /* Enable hover on the main Ensemble Model section card */
+    section.card:first-of-type { transition: all 0.3s ease; }
+    section.card:first-of-type:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(59, 130, 246, 0.25), 0 6px 16px rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    /* Modal */
+    .modal-overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,0.72);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:9999;
+    }
+    .modal-overlay.open{ display:flex; }
+    .modal{
+      width:min(1100px, 96vw);
+      max-height: 92vh;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(20,24,32,0.96);
+      display:flex;
+      flex-direction:column;
+    }
+    .modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+    }
+    .modal-title{ opacity:0.95; font-weight: 700; color: #fff; }
+    .modal-actions{ display:flex; gap:8px; align-items:center; }
+    .icon-round{
+      width:38px; height:38px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.04);
+      cursor:pointer;
+      color: #fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition: background 0.2s ease;
+    }
+    .icon-round:hover{ background: rgba(255,255,255,0.08); }
+    .modal-body{ overflow:auto; padding:14px; }
+    .modal-body img{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.08);
+    }
+    .modal-cap{ margin-top:10px; opacity:0.9; color: #9ca3af; }
+  </style>
+</head>
+
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="icon-btn" aria-label="Menu"><i class="bi bi-list"></i></button>
+    <img src="../saved_model_outputs/logo.png" alt="EurGrid Logo" class="header-logo">
+  </div>
+  <div class="topbar-center">EurGrid</div>
+</header>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    Electricity Demand Forecasting
+    <div class="brand-sub">Bathula Veera • Gagan • Pinky Sherwani</div>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-link" href="../index.html"><i class="bi bi-house-door"></i> Home</a>
+    <a class="nav-link" href="problem.html"><i class="bi bi-bullseye"></i> Understanding the Problem</a>
+    <a class="nav-link" href="dataset.html"><i class="bi bi-database"></i> Dataset</a>
+    <a class="nav-link" href="preprocessing.html"><i class="bi bi-sliders"></i> Pre Processing</a>
+    <a class="nav-link" href="eda.html"><i class="bi bi-graph-up"></i> Exploratory Data Analysis</a>
+    <a class="nav-link" href="features.html"><i class="bi bi-diagram-3"></i> Feature Engineering</a>
+    <a class="nav-link active" href="models.html"><i class="bi bi-cpu"></i> Models & Results</a>
+    <a class="nav-link" href="explainability.html"><i class="bi bi-lightbulb"></i> Explainability</a>
+    <a class="nav-link" href="references.html"><i class="bi bi-book"></i> References</a>
+
+    <div class="nav-divider"></div>
+    <a class="nav-link" id="githubLink"><i class="bi bi-github"></i> Git Repository</a>
+  </nav>
+
+  <div style="padding:14px 16px;color:#cfd8e3;">
+    © <span id="year"></span>
+  </div>
+</aside>
+
+<main class="content">
+
+  <!-- HERO -->
+  <section class="card" style="text-align:center; position: relative;">
+    <img src="../saved_model_outputs/ensemble_outputs/ensemble.png" alt="Ensemble Model" style="position: absolute; right: 20px; top: 18px; width: 300px; height: 260px; max-height: 1050px; border-radius: 8px; object-fit: contain; z-index: 1;">
+    <h1 style="font-weight: bold; font-size: 2.2em; text-align: center;">Ensemble Model</h1>
+    <p class="muted" style="font-size: 0.9em; text-align: center;">
+      SARIMA + LSTM + Hybrid
+    </p>
+    <p class="muted" style="font-size: 0.85em; text-align: center; margin-top: 8px; padding-right: 340px; padding-bottom: 20px; min-height: 100px;">
+      Combines SARIMA, LSTM, and Hybrid using blending/meta-learners (mean/median, Ridge/weighted Ridge stacking, NNLS) with a peak-aware switch that applies residual correction mainly during peak periods (≥ p90).<br><br>
+      Final prediction use the residual-corrected forecast during peak hours, otherwise use the normal LSTM forecast.
+    </p>
+
+    <div class="tabs">
+      <a class="tab" href="model_sarima.html"><i class="bi bi-graph-up"></i> SARIMA</a>
+      <a class="tab" href="model_lstm.html"><i class="bi bi-cpu"></i> LSTM</a>
+      <a class="tab" href="model_hybrid.html"><i class="bi bi-layers"></i> Hybrid</a>
+      <a class="tab active" href="model_ensemble.html"><i class="bi bi-diagram-2"></i> Ensemble</a>
+    </div>
+
+    <div class="pill-row">
+      <a class="pill" href="../saved_model_outputs/ensemble_outputs/final_switch_residual_predictions.csv" target="_blank" rel="noopener">
+        <i class="bi bi-table"></i> Predictions CSV
+      </a>
+      <a class="pill" href="https://github.com/Mech123/dswp_group2/blob/main/ensemble/ensemble_outputs/ensemble.ipynb" target="_blank" rel="noopener">
+        <i class="bi bi-journal-code"></i> Notebook
+      </a>
+    </div>
+
+    <!-- KPIs computed from CSV -->
+    <div class="kpi-grid" id="csvKpis" style="display:none;">
+      <div class="kpi"><p class="label">Overall MAE</p><p class="value" id="kpiMaeAll">–</p></div>
+      <div class="kpi"><p class="label">Overall RMSE</p><p class="value" id="kpiRmseAll">–</p></div>
+      <div class="kpi"><p class="label">Peak MAE</p><p class="value" id="kpiMaePeak">–</p></div>
+      <div class="kpi"><p class="label">Peak RMSE</p><p class="value" id="kpiRmsePeak">–</p></div>
+    </div>
+
+    <div id="csvState" class="muted" style="margin-top:10px;">Loading CSV metrics…</div>
+  </section>
+
+  <div class="dash">
+
+    <!-- LEFT: Metrics + Figures -->
+    <section class="card" style="text-align: center;">
+      <h2 style="font-weight: bold; font-size: 1.5em;">Metrics & Visualizations</h2>
+      <p class="muted">Click an image to zoom. Navigate between images using arrow buttons or keyboard.</p>
+
+      <div class="grid" style="margin-top: 20px;">
+
+        <!-- Eval: Actual vs Key Models -->
+        <div class="cardplot"
+             data-group="predictions"
+             data-title="Eval: Actual vs Key Models"
+             data-cap="Evaluation set: actual demand compared to key model predictions.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Eval: Actual vs Key Models</div>
+              <div class="cardplot-sub">Actual demand vs key model predictions (eval)</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/ensemble_outputs/01_actual_vs_predictions_full.png"
+                 alt="Eval: Actual vs Key Models"
+                 data-modal="true"
+                 data-caption="Evaluation set: actual demand compared to key model predictions (actual, LSTM, final_switch_residual, ens_residual_lstm, ens_nnls)."/>
+          </div>
+        </div>
+
+        <!-- Eval Absolute Error CDF -->
+        <div class="cardplot"
+             data-group="errors"
+             data-title="Eval Absolute Error CDF"
+             data-cap="CDF of absolute error on evaluation set (lower is better).">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Eval Absolute Error CDF</div>
+              <div class="cardplot-sub">Absolute error distribution (lower is better)</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/ensemble_outputs/02_eval_absolute_error_cdf.png"
+                 alt="Eval Absolute Error CDF"
+                 data-modal="true"
+                 data-caption="CDF of absolute error on the evaluation set for key models (lower curve = better overall error distribution)."/>
+          </div>
+        </div>
+
+        <!-- Peak PR Curve -->
+        <div class="cardplot"
+             data-group="peak"
+             data-title="Peak Detection PR Curve (Eval)"
+             data-cap="Precision-Recall tradeoff for peak-load detection (peak = actual ≥ p90(eval)).">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Peak Detection PR Curve (Eval)</div>
+              <div class="cardplot-sub">Precision-Recall analysis for peak-load detection</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/ensemble_outputs/03_peak_detection_pr_curve.png"
+                 alt="Peak Detection PR Curve (Eval)"
+                 data-modal="true"
+                 data-caption="Peak Detection Precision-Recall Curve on eval set (peak = actual ≥ p90(eval)) comparing models."/>
+          </div>
+        </div>
+
+        <!-- Tuned final-switch vs LSTM -->
+        <div class="cardplot"
+             data-group="switch"
+             data-title="Tuned final-switch vs LSTM"
+             data-cap="Eval: tuned final-switch vs LSTM with triggered points highlighted.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Tuned final-switch vs LSTM</div>
+              <div class="cardplot-sub">Triggered peak points highlighted (eval)</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/ensemble_outputs/04_tuned_final_switch_vs_lstm_full.png"
+                 alt="Tuned final-switch vs LSTM"
+                 data-modal="true"
+                 data-caption="Evaluation: tuned final-switch vs LSTM, with triggered (peak) points highlighted."/>
+          </div>
+        </div>
+
+        <!-- Overall vs Peak comparison -->
+        <div class="cardplot"
+             data-group="comparison"
+             data-title="Overall vs Peak MAE Comparison"
+             data-cap="Overall MAE and Peak-only MAE comparison across all tried models.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Overall vs Peak MAE Comparison</div>
+              <div class="cardplot-sub">Sorted MAE (overall) and MAE (peaks only)</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/ensemble_outputs/05_Overall_vs_Peak__comparision.png"
+                 alt="Overall vs Peak MAE Comparison"
+                 data-modal="true"
+                 data-caption="Bar charts comparing overall MAE and peak-only MAE (actual ≥ p90(eval)) across all tried models."/>
+          </div>
+        </div>
+
+        <!-- Overall vs Peak comparison -->
+        <div class="cardplot"
+             data-group="comparison"
+             data-title="Overall vs Peak MAE Comparison"
+             data-cap="Overall MAE and Peak-only MAE comparison across all tried models.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Triggered Peaks: Error Improvement</div>
+              <div class="cardplot-sub">Peak error improvement between LSTM and tuned final-switch</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/ensemble_outputs/06_triggered_peaks_error_improvement.png"
+                 alt="Overall vs Peak MAE Comparison"
+                 data-modal="true"
+                 data-caption="Bar charts comparing overall MAE and peak-only MAE (actual ≥ p90(eval)) across all tried models."/>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div class="grid-2" style="margin-top: 20px;">
+        <div class="panel">
+          <h3 style="margin:0 0 6px; font-weight: bold;">Model Summary</h3>
+          <p class="muted" style="margin:0; font-size: 0.9em; text-align: center;">
+            The ensemble forecasting system uses a Switch-Residual strategy to maintain high accuracy, particularly during critical high-demand periods. It continuously monitors a baseline model and automatically activates a residual corrector when a potential demand spike is detected, refining forecasts using real-time data. This approach ensures stable performance under normal conditions while significantly reducing errors during extreme demand fluctuations.
+          </p>
+        </div>
+        <div class="panel">
+          <h3 style="margin:0 0 6px; font-weight: bold; font-size: 0.9em;">Computed Predictions</h3>
+          <div class="metrics-grid" id="csvTable" style="display:none;">
+            <div class="metrics-col">
+              <div class="metrics-col-header">Overall</div>
+              <table>
+                <tbody id="csvBodyOverall"></tbody>
+              </table>
+            </div>
+            <div class="metrics-col">
+              <div class="metrics-col-header">Peak</div>
+              <table>
+                <tbody id="csvBodyPeak"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-actions" style="justify-content:center; margin-top:20px;">
+        <a class="btn" href="models.html"><i class="bi bi-arrow-left"></i>Models</a>
+        <a class="btn primary" href="explainability.html"><i class="bi bi-arrow-right"></i> Explainability</a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="imgModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Plot viewer">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">Plot</div>
+      <div class="modal-actions">
+        <button class="icon-round" id="prevBtn" aria-label="Previous"><i class="bi bi-chevron-left"></i></button>
+        <button class="icon-round" id="nextBtn" aria-label="Next"><i class="bi bi-chevron-right"></i></button>
+        <button class="icon-round" id="closeBtn" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <img id="modalImg" alt="Expanded plot">
+      <div class="modal-cap" id="modalCap"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toNum(x){
+    const n = Number(String(x).trim());
+    return Number.isFinite(n) ? n : null;
+  }
+  function fmt(x, d=3){
+    if (x === null || x === undefined) return "N/A";
+    if (!Number.isFinite(x)) return "N/A";
+    return x.toFixed(d);
+  }
+
+  // Minimal CSV parser (supports quoted fields)
+  function parseCsv(text){
+    const rows = [];
+    let row = [];
+    let cur = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++){
+      const ch = text[i];
+      const next = text[i+1];
+
+      if (ch === '"' ){
+        if (inQuotes && next === '"'){ cur += '"'; i++; }
+        else { inQuotes = !inQuotes; }
+        continue;
+      }
+
+      if (!inQuotes && (ch === ',')){
+        row.push(cur);
+        cur = "";
+        continue;
+      }
+
+      if (!inQuotes && (ch === '\n')){
+        row.push(cur);
+        rows.push(row);
+        row = [];
+        cur = "";
+        continue;
+      }
+
+      if (ch === '\r') continue;
+      cur += ch;
+    }
+
+    if (cur.length > 0 || row.length > 0){
+      row.push(cur);
+      rows.push(row);
+    }
+
+    return rows;
+  }
+
+  async function loadCsvMetrics(){
+    const state = document.getElementById("csvState");
+    const tbl = document.getElementById("csvTable");
+    const kpis = document.getElementById("csvKpis");
+
+    try{
+      const res = await fetch("../saved_model_outputs/ensemble_outputs/ensemble_comparison_table.csv", { cache: "no-store" });
+      if (!res.ok) throw new Error("csv not found");
+      const text = await res.text();
+
+      const rows = parseCsv(text.trim());
+      if (!rows.length) throw new Error("empty csv");
+
+      const header = rows[0].map(s => String(s).trim());
+      const idx = (name) => header.indexOf(name);
+
+      const requiredCols = [
+        "Model",
+        "Overall_MAE","Overall_RMSE","Overall_WAPE","Overall_sMAPE","Overall_R2","Overall_AE_P90","Overall_AE_P95",
+        "Peak_MAE","Peak_RMSE","Peak_WAPE","Peak_sMAPE","Peak_R2","Peak_AE_P90","Peak_AE_P95","Peak_N"
+      ];
+      for (const c of requiredCols){
+        if (idx(c) < 0) throw new Error("Missing column: " + c);
+      }
+
+      // Pick the ensemble row:
+      // 1) final_switch_residual if present
+      // 2) ensemble if present
+      // 3) otherwise first data row
+      let dataRow = null;
+
+      const dataRows = rows.slice(1).filter(r => r.some(v => String(v).trim() !== ""));
+      const findByModel = (m) => dataRows.find(r => String(r[idx("Model")] ?? "").trim() === m);
+
+      dataRow = findByModel("ens_residual_lstm") || findByModel("ensemble") || dataRows[0];
+      if (!dataRow) throw new Error("No data rows");
+
+      const getVal = (col) => {
+        const v = dataRow[idx(col)];
+        const n = toNum(v);
+        return (n === null) ? null : n;
+      };
+
+      // KPIs
+      document.getElementById("kpiMaeAll").textContent  = fmt(getVal("Overall_MAE"));
+      document.getElementById("kpiRmseAll").textContent = fmt(getVal("Overall_RMSE"));
+      document.getElementById("kpiMaePeak").textContent = fmt(getVal("Peak_MAE"));
+      document.getElementById("kpiRmsePeak").textContent= fmt(getVal("Peak_RMSE"));
+
+      // Table content (ONLY the listed metrics)
+      const overallOrder = [
+        ["MAE",      "Overall_MAE"],
+        ["RMSE",     "Overall_RMSE"],
+        ["WAPE",     "Overall_WAPE"],
+        ["sMAPE",    "Overall_sMAPE"],
+        ["R²",       "Overall_R2"],
+        ["AE P90",   "Overall_AE_P90"],
+        ["AE P95",   "Overall_AE_P95"]
+      ];
+
+      const peakOrder = [
+        ["MAE",      "Peak_MAE"],
+        ["RMSE",     "Peak_RMSE"],
+        ["WAPE",     "Peak_WAPE"],
+        ["sMAPE",    "Peak_sMAPE"],
+        ["R²",       "Peak_R2"],
+        ["AE P90",   "Peak_AE_P90"],
+        ["AE P95",   "Peak_AE_P95"],
+        ["N",        "Peak_N"]
+      ];
+
+      const overallBody = document.getElementById("csvBodyOverall");
+      overallBody.innerHTML = overallOrder.map(([label, col]) => {
+        const v = getVal(col);
+        const show = (col === "Peak_N") ? String(v ?? "N/A") : (v === null ? "N/A" : fmt(v));
+        const isBold = (label === "MAE" || label === "RMSE" || label === "R²");
+        const valueCell = isBold ? `<td style="font-weight: bold;">${show}</td>` : `<td>${show}</td>`;
+        return `<tr><td>${label}</td>${valueCell}</tr>`;
+      }).join("");
+
+      const peakBody = document.getElementById("csvBodyPeak");
+      peakBody.innerHTML = peakOrder.map(([label, col]) => {
+        const raw = dataRow[idx(col)];
+        const isN = (col === "Peak_N");
+        const val = isN ? (String(raw ?? "").trim()) : fmt(getVal(col));
+        const show = isN ? (val ? val : "N/A") : val;
+        const isBold = (label === "MAE" || label === "RMSE" || label === "R²");
+        const valueCell = isBold ? `<td style="font-weight: bold;">${show}</td>` : `<td>${show}</td>`;
+        return `<tr><td>${label}</td>${valueCell}</tr>`;
+      }).join("");
+
+      state.style.display = "none";
+      kpis.style.display = "grid";
+      tbl.style.display = "grid";
+    }catch(e){
+      state.textContent = "Could not load Ensemble metrics from final_switch_residual_predictions.csv.";
+    }
+  }
+
+  // Modal setup with navigation
+  const modal = document.getElementById('imgModal');
+  const modalImg = document.getElementById('modalImg');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalCap = document.getElementById('modalCap');
+  const closeBtn = document.getElementById('closeBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  let visibleCards = [];
+  let currentIndex = 0;
+
+  function refreshVisibleCards(){
+    visibleCards = Array.from(document.querySelectorAll('.cardplot'));
+  }
+
+  function openModalByIndex(i){
+    refreshVisibleCards();
+    currentIndex = Math.max(0, Math.min(i, visibleCards.length - 1));
+    const c = visibleCards[currentIndex];
+    const img = c.querySelector('img[data-modal="true"]');
+    if (img) {
+      modalImg.src = img.getAttribute('src');
+      modalTitle.textContent = c.dataset.title || 'Plot';
+      modalCap.textContent = img.getAttribute('data-caption') || c.dataset.cap || '';
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+  }
+  function closeModal(){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    modalImg.src = '';
+  }
+  function nextImg(){
+    refreshVisibleCards();
+    if (visibleCards.length > 0) openModalByIndex((currentIndex + 1) % visibleCards.length);
+  }
+  function prevImg(){
+    refreshVisibleCards();
+    if (visibleCards.length > 0) openModalByIndex((currentIndex - 1 + visibleCards.length) % visibleCards.length);
+  }
+
+  document.querySelectorAll('.cardplot img[data-modal="true"]').forEach((img) => {
+    img.style.cursor = "zoom-in";
+    img.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = img.closest('.cardplot');
+      const cardIndex = Array.from(document.querySelectorAll('.cardplot')).indexOf(card);
+      openModalByIndex(cardIndex);
+    });
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (nextBtn) nextBtn.addEventListener('click', nextImg);
+  if (prevBtn) prevBtn.addEventListener('click', prevImg);
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  document.addEventListener('keydown', (e) => {
+    if (!modal || !modal.classList.contains('open')) return;
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowRight') nextImg();
+    if (e.key === 'ArrowLeft') prevImg();
+  });
+
+  loadCsvMetrics();
+</script>
+
+<script src="../assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "class_weights": {
+    "0": 0.9862714037866788,
+    "1": 1.0141161870782596
+  },
+  "class_distribution": {
+    "0": 13257,
+    "1": 12893
+  },
+  "imbalance_ratio": 1.0282323741565191,
+  "method": "cost_sensitive_learning",
+  "note": "Use these class weights in model training (e.g., class_weight parameter in sklearn)"
+}

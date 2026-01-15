@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EDA Dashboard | Alex’s Grid Console</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css" />
+
+  <style>
+    /* Layout */
+    .dash{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap: 14px;
+      align-items:start;
+    }
+    @media (max-width: 1100px){
+      .dash{ grid-template-columns: 1fr; }
+    }
+
+    /* KPI row */
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+    @media (max-width: 980px){
+      .kpis{ grid-template-columns: 1fr; }
+    }
+    .kpi{
+      border: 1px solid #0078ff;
+      border-radius: 12px;
+      padding: 12px 12px;
+      background: rgba(255,255,255,0.25);
+    }
+    .kpi .label{ color: var(--text-muted); font-size: 15px; font-weight: 700; }
+    .kpi .value{ font-size: 13px; margin-top: 6px; }
+
+    /* Filters */
+    .filters{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .chip{
+      border: 1px solid #000000;
+      background: rgba(255,255,255,0.18);
+      border-radius: 999px;
+      padding: 8px 10px;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .chip:hover{
+      border-color: #0078ff;
+      background: rgba(0, 120, 255, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 120, 255, 0.25), 0 2px 6px rgba(0, 120, 255, 0.15);
+      transform: translateY(-2px);
+    }
+    .chip select, .chip input{
+      border: none;
+      outline: none;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      padding: 2px 4px;
+      min-width: 140px;
+      cursor: pointer;
+    }
+
+    /* Plot grid */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 20px;
+      margin-top: 24px;
+    }
+    .cardplot{
+      grid-column: span 6;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow:hidden;
+      cursor:pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+      position: relative;
+    }
+    .cardplot::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, rgba(0, 120, 255, 0.6), rgba(59, 130, 246, 0.4));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 1;
+    }
+    .cardplot:hover::before {
+      opacity: 1;
+    }
+    .cardplot:hover{
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 12px 32px rgba(0, 120, 255, 0.25), 0 6px 16px rgba(0, 120, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+      border-color: rgba(0, 120, 255, 0.4);
+    }
+    .cardplot.wide{ grid-column: span 12; }
+    @media (max-width: 980px){
+      .cardplot{ grid-column: span 12; }
+    }
+
+    .cardplot-head{
+      padding: 16px 18px;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #f3f4f6;
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.04) 0%, rgba(249, 250, 251, 0.8) 100%);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .cardplot:hover .cardplot-head{
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.08) 0%, rgba(239, 246, 255, 0.9) 100%);
+      border-bottom-color: rgba(0, 120, 255, 0.15);
+    }
+    .cardplot-title{ 
+      font-weight: 600; 
+      margin:0; 
+      font-size: 20px;
+      color: #111827;
+      letter-spacing: -0.01em;
+      transition: color 0.3s ease;
+    }
+    .cardplot:hover .cardplot-title {
+      color: #0078ff;
+    }
+    .cardplot-sub{ 
+      color: #9ca3af; 
+      margin-top: 6px; 
+      line-height: 1.5; 
+      font-size: 10px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border: 1px solid rgba(0, 120, 255, 0.2);
+      background: rgba(0, 120, 255, 0.08);
+      color: #1c84c6;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .cardplot:hover .tag{
+      background: rgba(0, 120, 255, 0.15);
+      border-color: rgba(0, 120, 255, 0.35);
+      transform: scale(1.05);
+      box-shadow: 0 2px 8px rgba(0, 120, 255, 0.2);
+    }
+    .cardplot img{
+      width: 100%;
+      height: auto;
+      display:block;
+      transition: transform 0.3s ease;
+    }
+    .cardplot:hover img {
+      transform: scale(1.02);
+    }
+    .cardplot:hover img{
+      transform: scale(1.02);
+    }
+
+    /* Right insight panel */
+    .insights{
+      position: sticky;
+      top: 100px;
+    }
+    @media (max-width: 1100px){
+      .insights{ position: static; }
+    }
+
+    .insight-box{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(255,255,255,0.25);
+    }
+    .insight-title{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      font-weight: 800;
+      margin: 0 0 8px 0;
+    }
+    .insight-muted{ color: var(--text-muted); line-height: 1.45; }
+
+    .insight-list{
+      margin: 10px 0 0 0;
+      padding-left: 18px;
+    }
+    .insight-list li{ margin: 6px 0; }
+
+    /* Modal */
+    .modal-overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,0.72);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:9999;
+    }
+    .modal-overlay.open{ display:flex; }
+    .modal{
+      width:min(1100px, 96vw);
+      max-height: 92vh;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(20,24,32,0.96);
+      display:flex;
+      flex-direction:column;
+    }
+    .modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+    }
+    .modal-title{ opacity:0.95; font-weight: 700; }
+    .modal-actions{ display:flex; gap:8px; align-items:center; }
+    .icon-round{
+      width:38px; height:38px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.04);
+      cursor:pointer;
+      color: inherit;
+    }
+    .icon-round:hover{ background: rgba(255,255,255,0.08); }
+    .modal-body{ overflow:auto; padding:14px; }
+    .modal-body img{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.08);
+    }
+    .modal-cap{ margin-top:10px; opacity:0.9; color: var(--text-muted); }
+
+    /* Blue shadow and gray border for all sections */
+    .content .card {
+      box-shadow: 0 8px 24px rgba(0, 120, 255, 0.25), 0 4px 12px rgba(0, 120, 255, 0.15);
+      border: 1px solid #9ca3af;
+    }
+
+    .insight-box {
+      box-shadow: 0 8px 24px rgba(0, 120, 255, 0.25), 0 4px 12px rgba(0, 120, 255, 0.15);
+      border: 1px solid #9ca3af;
+    }
+
+    /* Styling for the dashboard intro card section - matching Short Term Electricity Demand Forecasting.html design */
+    .dashboard-intro {
+      text-align: center;
+      padding: 32px 24px;
+    }
+
+    .dashboard-intro h1 {
+      font-size: 2.2em;
+      font-weight: 700;
+      margin: 0 0 12px 0;
+      color: #000000;
+      line-height: 1.2;
+    }
+
+    .dashboard-intro p.muted {
+      font-size: 14px;
+      color: #9ca3af;
+      margin: 0 auto 24px auto;
+      max-width: 800px;
+      line-height: 1.6;
+    }
+
+    .dashboard-intro .kpis {
+      margin-top: 24px;
+    }
+
+    .dashboard-intro .filters {
+      margin-top: 20px;
+      justify-content: center;
+    }
+
+    /* Styling for the Plots card section - matching Short Term Electricity Demand Forecasting.html design */
+    .plots-section {
+      text-align: center;
+      padding: 32px 24px;
+      position: sticky;
+      top: 128px;
+      align-self: start;
+      z-index: 10;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+    @media (max-width: 1100px){
+      .plots-section { position: static; }
+    }
+
+    .plots-section h2 {
+      font-size: 1.8em;
+      font-weight: 700;
+      margin: 0 0 12px 0;
+      color: #000000;
+      line-height: 1.2;
+    }
+
+    .plots-section p.muted {
+      font-size: 14px;
+      color: #9ca3af;
+      margin: 0 auto 24px auto;
+      max-width: 800px;
+      line-height: 1.6;
+    }
+
+    .plots-section .grid {
+      margin-top: 24px;
+    }
+
+    /* Disable hover effects on the Plots card */
+    .plots-section:hover {
+      transform: none;
+      box-shadow: 0 8px 24px rgba(0, 120, 255, 0.25), 0 4px 12px rgba(0, 120, 255, 0.15);
+      border-color: #9ca3af;
+    }
+
+    /* Header Styling */
+    .topbar {
+      height: 90px;
+      overflow: visible;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 2px solid rgba(0, 120, 255, 0.1);
+    }
+
+    .content {
+      padding-top: 112px;
+    }
+
+    /* Enhanced Header Styling */
+    .topbar-center {
+      font-size: 2em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: #0078ff;
+      background: linear-gradient(135deg, #0078ff 0%, #3b82f6 50%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      display: inline-block;
+      padding: 8px 24px;
+      margin: 0 auto;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .topbar-center::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #0078ff, #3b82f6, #0078ff, transparent);
+      border-radius: 2px;
+      opacity: 0.5;
+      animation: shimmer-line 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer-line {
+      0%, 100% {
+        opacity: 0.3;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    /* Ensure hamburger button is clickable */
+    .icon-btn {
+      z-index: 1002;
+      position: relative;
+    }
+
+    /* Match background to header */
+    body {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    html {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    /* Logo styling */
+    .header-logo {
+      height: 150px;
+      width: auto;
+      margin-right: 1px;
+      margin-left: -10px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="icon-btn" aria-label="Menu"><i class="bi bi-list"></i></button>
+    <img src="../saved_model_outputs/logo.png" alt="EurGrid Logo" class="header-logo">
+  </div>
+  <div class="topbar-center">EurGrid</div>
+</header>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    Electricity Demand Forecasting
+    <div class="brand-sub">Bathula Veera • Gagan • Pinky Sherwani</div>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-link" href="../Short Term Electricity Demand Forecasting.html"><i class="bi bi-house-door"></i> Home</a>
+    <a class="nav-link" href="problem.html"><i class="bi bi-bullseye"></i> Understanding the Problem</a>
+    <a class="nav-link" href="dataset.html"><i class="bi bi-database"></i> Dataset</a>
+    <a class="nav-link" href="preprocessing.html"><i class="bi bi-sliders"></i> Pre Processing</a>
+    <a class="nav-link active" href="eda.html"><i class="bi bi-graph-up"></i> EDA Dashboard</a>
+    <a class="nav-link" href="features.html"><i class="bi bi-diagram-3"></i> Feature Engineering</a>
+    <a class="nav-link" href="models.html"><i class="bi bi-cpu"></i> Models & Results</a>
+    <a class="nav-link" href="explainability.html"><i class="bi bi-lightbulb"></i> Explainability</a>
+    <a class="nav-link" href="references.html"><i class="bi bi-book"></i> References</a>
+
+    <div class="nav-divider"></div>
+    <a class="nav-link" id="githubLink"><i class="bi bi-github"></i> Git Repository</a>
+  </nav>
+
+  <div style="padding:14px 16px;color:#cfd8e3;">
+    © <span id="year"></span>
+  </div>
+</aside>
+
+<main class="content">
+
+  <section class="card dashboard-intro">
+    <h1 style="font-size: 1.5em;">EDA Dashboard: Alex's Grid Console</h1>
+    <p class="muted">
+      This dashboard summarizes how electricity demand behaves over time. Alex uses it to verify repeating structure,
+      peak behavior, and the dependencies that forecasting models must learn.
+    </p>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="label">Resolution</div>
+        <div class="value">60 minutes</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Operational window</div>
+        <div class="value">2015 → 2018</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Core seasonality</div>
+        <div class="value">Daily + Weekly</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Model impact</div>
+        <div class="value">ENSEMBLE FINAL_SWITCH_RESIDUAL</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="chip">
+        <i class="bi bi-funnel"></i>
+        <label for="groupSel" class="muted">View:</label>
+        <select id="groupSel">
+          <option value="all">All plots</option>
+          <option value="signal">Signal</option>
+          <option value="seasonality">Seasonality</option>
+          <option value="stationarity">Stationarity</option>
+          <option value="calendar">Calendar</option>
+          <option value="weather">Weather</option>
+          <option value="lags">Lags</option>
+          <option value="features">Features</option>
+        </select>
+      </div>
+
+      <div class="chip">
+        <i class="bi bi-search"></i>
+        <label for="searchPlots" class="muted">Find:</label>
+        <input id="searchPlots" type="text" placeholder="e.g., ACF, STL, heatmap">
+      </div>
+    </div>
+  </section>
+
+  <div class="dash">
+
+    <!-- LEFT: Dashboard plots -->
+    <div class="card plots-section">
+      <h2>Plots</h2>
+      <p class="muted">Click a card to zoom. Click a card header to load Alex’s insight panel.</p>
+
+      <div class="grid" id="plotGrid">
+
+        <!-- Target Distribution -->
+        <div class="cardplot" data-group="signal"
+             data-title="Target Distribution Analysis"
+             data-cap="Comprehensive statistical overview: distribution, boxplot, normality check, and cumulative distribution."
+             data-insight="Alex confirms the bimodal nature of electricity load and validates non-normal distribution assumptions."
+             data-why="Understanding the target distribution guides model selection (e.g., SARIMA for seasonal patterns, LSTM for non-linear relationships) and feature engineering choices.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Target Distribution</div>
+              <div class="cardplot-sub">Histogram, boxplot, Q-Q plot, and CDF analysis</div>
+            </div>
+            <div class="tag"><i class="bi bi-bar-chart"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step2_target_distribution_60min.png" alt="Target distribution">
+        </div>
+
+        <div class="cardplot" data-group="seasonality"
+             data-title="Seasonality Patterns"
+             data-cap="Hour/weekday/month structure and heatmaps."
+             data-insight="Alex verifies the grid's daily and weekly rhythm."
+             data-why="This directly motivates cyclical encodings and seasonal settings for SARIMA.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Seasonality</div>
+              <div class="cardplot-sub">Daily + weekly cycles, plus monthly effects</div>
+            </div>
+            <div class="tag"><i class="bi bi-calendar3"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step4_seasonality_60min.png" alt="Seasonality plot">
+        </div>
+
+        <!-- Use your existing plot paths (from current eda.html) -->
+        <div class="cardplot wide" data-group="signal"
+             data-title="Electricity Load — Time Series Overview"
+             data-cap="Recurring daily structure and long-horizon seasonal change."
+             data-insight="Alex checks whether peaks repeat and whether the signal is stable enough to forecast."
+             data-why="If the global pattern is inconsistent, any model will be unreliable during peak events.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Time Series Overview</div>
+              <div class="cardplot-sub">Signal shape across the full period + a short window</div>
+            </div>
+            <div class="tag"><i class="bi bi-activity"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step3_timeseries_60min.png" alt="Time series overview">
+        </div>
+
+        <div class="cardplot" data-group="seasonality"
+             data-title="STL Decomposition"
+             data-cap="Trend vs seasonal vs residual components."
+             data-insight="Alex uses decomposition to distinguish structure from anomalies."
+             data-why="Hybrid models can learn residual patterns after SARIMA captures trend/seasonality.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">STL Decomposition</div>
+              <div class="cardplot-sub">Trend, seasonal, residual separation</div>
+            </div>
+            <div class="tag"><i class="bi bi-layers"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step5_stl_decomposition_60min.png" alt="STL decomposition">
+        </div>
+
+        <div class="cardplot" data-group="stationarity"
+             data-title="Stationarity — Rolling Statistics"
+             data-cap="Rolling mean and standard deviation inspection."
+             data-insight="Alex checks whether differencing is needed for stable forecasting."
+             data-why="Stationarity affects SARIMA choices and error stability.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Stationarity</div>
+              <div class="cardplot-sub">Rolling mean/variance behavior</div>
+            </div>
+            <div class="tag"><i class="bi bi-graph-up"></i>Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step6_stationarity_60min.png" alt="Stationarity plot">
+        </div>
+
+        <div class="cardplot" data-group="lags"
+             data-title="ACF and PACF"
+             data-cap="Correlation structure across lags."
+             data-insight="Alex confirms short-lag dependence and seasonal lags."
+             data-why="Supports lag feature selection (1/24/168) and SARIMA orders.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">ACF / PACF</div>
+              <div class="cardplot-sub">Autocorrelation diagnostics</div>
+            </div>
+            <div class="tag"><i class="bi bi-link-45deg"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step7_autocorrelation_60min.png" alt="ACF PACF">
+        </div>
+
+        <div class="cardplot" data-group="calendar"
+             data-title="Calendar Effects"
+             data-cap="Weekday vs weekend and hour-by-day patterns."
+             data-insight="Alex checks operational behavior across workdays and weekends."
+             data-why="Justifies calendar features and time-of-day categories.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Calendar Effects</div>
+              <div class="cardplot-sub">Weekday/weekend + hourly patterns</div>
+            </div>
+            <div class="tag"><i class="bi bi-calendar-week"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step8_calendar_effects_60min.png" alt="Calendar effects">
+        </div>
+
+        <div class="cardplot" data-group="weather"
+             data-title="Weather Exploration"
+             data-cap="Demand vs weather relationships."
+             data-insight="Alex validates weather relevance to demand shifts."
+             data-why="Supports adding proxies and robust scaling to help learning models.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Weather Relationships</div>
+              <div class="cardplot-sub">Correlation/scatter exploration</div>
+            </div>
+            <div class="tag"><i class="bi bi-cloud-sun"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step9_weather_exploration_60min.png" alt="Weather exploration">
+        </div>
+
+        <div class="cardplot" data-group="lags"
+             data-title="Lagged Relationships"
+             data-cap="Lag scatter patterns across multiple horizons."
+             data-insight="Alex confirms why lag and rolling features are necessary."
+             data-why="Lag dependence is the backbone of short-term load forecasting.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Lag Relationships</div>
+              <div class="cardplot-sub">Lagged scatter & dependence</div>
+            </div>
+            <div class="tag"><i class="bi bi-arrow-repeat"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step10_lagged_relationships_60min.png" alt="Lagged relationships">
+        </div>
+
+        <!-- Data Availability Timeline -->
+        <div class="cardplot" data-group="signal"
+             data-title="Data Availability Timeline (After Gap-Filling)"
+             data-cap="Complete data coverage across the entire operational period with no missing values."
+             data-insight="Alex verifies that the dataset is complete and ready for modeling after gap-filling procedures."
+             data-why="Missing data can introduce bias and reduce model reliability. Complete coverage ensures consistent forecasting performance.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Data Availability Timeline</div>
+              <div class="cardplot-sub">Post gap-filling coverage verification</div>
+            </div>
+            <div class="tag"><i class="bi bi-check-circle"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step1.1_coverage_timeline_after_60min.png" alt="Data availability timeline">
+        </div>
+
+        <!-- Peak Load Analysis -->
+        <div class="cardplot" data-group="calendar"
+             data-title="Peak Load Analysis"
+             data-cap="Comprehensive peak load investigation: time series with peaks highlighted, hourly patterns, weekday/weekend distribution, and solar proxy relationship."
+             data-insight="Alex identifies that peak loads occur primarily during weekday mornings (8-12 PM) and are inversely related to solar generation."
+             data-why="Peak load patterns inform threshold selection (p90), feature engineering (peak indicators), and model evaluation metrics (peak-specific MAE/RMSE).">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Peak Load Analysis</div>
+              <div class="cardplot-sub">Time series, hourly/weekly patterns, and solar relationship</div>
+            </div>
+            <div class="tag"><i class="bi bi-graph-up-arrow"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step11_peak_load_60min.png" alt="Peak load analysis">
+        </div>
+
+        <!-- Error Sensitivity Analysis -->
+        <div class="cardplot" data-group="signal"
+             data-title="Naive Forecast Error Analysis"
+             data-cap="Error distribution over time, histogram, peak vs non-peak comparison, and error-load relationship scatter plot."
+             data-insight="Alex observes that errors are centered near zero but show significant variability, with peak periods having slightly wider error distributions."
+             data-why="Understanding naive model errors establishes a baseline and highlights areas where advanced models (SARIMA, LSTM, Hybrid) must improve.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Error Sensitivity Analysis</div>
+              <div class="cardplot-sub">Naive forecast errors: temporal, distribution, and load relationships</div>
+            </div>
+            <div class="tag"><i class="bi bi-exclamation-triangle"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step12_error_sensitivity_60min.png" alt="Error sensitivity analysis">
+        </div>
+
+        <!-- Multicollinearity Analysis -->
+        <div class="cardplot" data-group="lags"
+             data-title="Feature Correlation & Importance Analysis"
+             data-cap="Correlation heatmap showing feature relationships and bar chart of feature importance based on correlation with target."
+             data-insight="Alex confirms strong multicollinearity among load features and identifies historical load (lags, rolling means) as the most important predictors."
+             data-why="High correlation among features may require regularization or feature selection. Target correlation guides feature prioritization for model training.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Multicollinearity & Feature Importance</div>
+              <div class="cardplot-sub">Correlation heatmap and target correlation analysis</div>
+            </div>
+            <div class="tag"><i class="bi bi-diagram-3"></i> Insights</div>
+          </div>
+          <img src="../saved_model_outputs/eda_outputs/step13_multicollinearity_60min.png" alt="Multicollinearity analysis">
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: Insights panel -->
+    <aside class="insights">
+      <div class="insight-box">
+        <h3 class="insight-title"><i class="bi bi-person-badge"></i> Alex’s Insight Panel</h3>
+        <p class="insight-muted" id="insightText">
+          Click any plot card to see Alex’s operational takeaway and why it matters for model design.
+        </p>
+
+        <ul class="insight-list" id="insightList" style="display:none;">
+          <li><b>Takeaway:</b> <span id="takeaway"></span></li>
+          <li><b>Why it matters:</b> <span id="why"></span></li>
+        </ul>
+
+        <div class="hero-actions" style="margin-top:12px;">
+          <a class="btn" href="preprocessing.html"><i class="bi bi-arrow-left"></i> Preprocessing</a>
+          <a class="btn primary" href="features.html"><i class="bi bi-arrow-right"></i> Feature Engineering</a>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="imgModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Plot viewer">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">Plot</div>
+      <div class="modal-actions">
+        <button class="icon-round" id="prevBtn" aria-label="Previous"><i class="bi bi-chevron-left"></i></button>
+        <button class="icon-round" id="nextBtn" aria-label="Next"><i class="bi bi-chevron-right"></i></button>
+        <button class="icon-round" id="closeBtn" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <img id="modalImg" alt="Expanded plot">
+      <div class="modal-cap" id="modalCap"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/app.js"></script>
+<script>
+  const groupSel = document.getElementById('groupSel');
+  const searchPlots = document.getElementById('searchPlots');
+  const cards = Array.from(document.querySelectorAll('.cardplot'));
+
+  function applyFilters(){
+    const g = groupSel.value;
+    const q = searchPlots.value.trim().toLowerCase();
+
+    cards.forEach(c => {
+      const matchesGroup = (g === 'all') || (c.dataset.group === g);
+      const text = (c.dataset.title + " " + c.dataset.cap).toLowerCase();
+      const matchesSearch = (!q) || text.includes(q);
+      c.style.display = (matchesGroup && matchesSearch) ? '' : 'none';
+    });
+  }
+  groupSel.addEventListener('change', applyFilters);
+  searchPlots.addEventListener('input', applyFilters);
+
+  // Insight panel update
+  const insightText = document.getElementById('insightText');
+  const insightList = document.getElementById('insightList');
+  const takeawayEl = document.getElementById('takeaway');
+  const whyEl = document.getElementById('why');
+
+  // Modal setup
+  const modal = document.getElementById('imgModal');
+  const modalImg = document.getElementById('modalImg');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalCap = document.getElementById('modalCap');
+  const closeBtn = document.getElementById('closeBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  let visibleCards = [];
+  let currentIndex = 0;
+
+  function refreshVisibleCards(){
+    visibleCards = cards.filter(c => c.style.display !== 'none');
+  }
+
+  function openModalByIndex(i){
+    refreshVisibleCards();
+    currentIndex = Math.max(0, Math.min(i, visibleCards.length - 1));
+    const c = visibleCards[currentIndex];
+    const img = c.querySelector('img');
+    modalImg.src = img.getAttribute('src');
+    modalTitle.textContent = c.dataset.title || 'Plot';
+    modalCap.textContent = c.dataset.cap || '';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+  function closeModal(){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    modalImg.src = '';
+  }
+  function nextImg(){ openModalByIndex((currentIndex + 1) % visibleCards.length); }
+  function prevImg(){ openModalByIndex((currentIndex - 1 + visibleCards.length) % visibleCards.length); }
+
+  cards.forEach((c, idx) => {
+    // Clicking anywhere on the card opens modal
+    c.addEventListener('click', () => openModalByIndex(idx));
+
+    // Clicking header updates insight panel (stop modal open)
+    const head = c.querySelector('.cardplot-head');
+    head.addEventListener('click', (e) => {
+      e.stopPropagation();
+      insightText.textContent = "";
+      takeawayEl.textContent = c.dataset.insight || '';
+      whyEl.textContent = c.dataset.why || '';
+      insightList.style.display = '';
+    });
+  });
+
+  closeBtn.addEventListener('click', closeModal);
+  nextBtn.addEventListener('click', nextImg);
+  prevBtn.addEventListener('click', prevImg);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  document.addEventListener('keydown', (e) => {
+    if (!modal.classList.contains('open')) return;
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowRight') nextImg();
+    if (e.key === 'ArrowLeft') prevImg();
+  });
+</script>
+</body>
+</html>

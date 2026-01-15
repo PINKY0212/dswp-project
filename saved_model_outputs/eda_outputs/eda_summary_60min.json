@@ -1,0 +1,117 @@
+{
+  "eda_summary": {
+    "resolution": "60min",
+    "dataset_info": {
+      "shape": [
+        32688,
+        83
+      ],
+      "time_range": "2015-01-08 00:00:00+00:00 to 2018-09-30 23:00:00+00:00",
+      "duration_days": 1361
+    },
+    "target_statistics": {
+      "mean": 55697.944169114046,
+      "std": 10025.699742767241,
+      "min": 31307.0,
+      "max": 77549.0,
+      "skewness": -0.04007207218723346,
+      "kurtosis": -1.1477145012185181
+    },
+    "seasonality": {
+      "daily_period": 24,
+      "weekly_period": 168,
+      "peak_hour": 10,
+      "peak_day": "Wednesday",
+      "peak_month": "Feb"
+    },
+    "stationarity": {
+      "adf_pvalue": 3.5622473540658653e-06,
+      "kpss_pvalue": 0.014332473394577187,
+      "needs_differencing": "False"
+    },
+    "peak_load": {
+      "threshold_90th": 68855.0,
+      "peak_percentage": 10.009789525208028,
+      "peak_count": 3272
+    },
+    "key_lags": [
+      1,
+      6,
+      12,
+      24,
+      48,
+      168
+    ],
+    "weather_features": [
+      "solar_proxy",
+      "wind_proxy",
+      "temp_proxy",
+      "DE_solar_generation_actual",
+      "DE_wind_generation_actual"
+    ],
+    "high_correlation_pairs": 150
+  },
+  "design_decisions": {
+    "sarima_parameters": {
+      "seasonal_period": 168,
+      "differencing_order": 0,
+      "seasonal_differencing": 1,
+      "note": "Parameters to be tuned via grid search, but these are starting points"
+    },
+    "lstm_features": {
+      "window_length": 168,
+      "key_lags": [
+        1,
+        6,
+        12,
+        24,
+        48,
+        168
+      ],
+      "calendar_features": [
+        "hour",
+        "day_of_week",
+        "month",
+        "is_weekend",
+        "is_holiday"
+      ],
+      "weather_features": [
+        "solar_proxy",
+        "wind_proxy",
+        "temp_proxy",
+        "DE_solar_generation_actual",
+        "DE_wind_generation_actual"
+      ],
+      "note": "Include lagged features, calendar features, and weather proxies"
+    },
+    "peak_threshold": {
+      "value": 68855.0,
+      "method": "90th percentile",
+      "note": "Use for peak load analysis and evaluation"
+    },
+    "validation_strategy": {
+      "method": "Time-based split",
+      "train_size": 0.7,
+      "test_size": 0.15,
+      "validation_size": 0.15,
+      "note": "Maintain temporal order, evaluate on recent data"
+    },
+    "evaluation_metrics": {
+      "primary": [
+        "MAE",
+        "RMSE",
+        "MAPE"
+      ],
+      "peak_specific": [
+        "Peak MAE",
+        "Peak RMSE"
+      ],
+      "note": "Evaluate overall performance and peak-specific performance"
+    },
+    "feature_selection": {
+      "remove_highly_correlated": true,
+      "correlation_threshold": 0.8,
+      "note": "Remove redundant features to improve model efficiency"
+    }
+  }
+}

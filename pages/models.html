@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Models & Results</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- IMPORTANT: pages/* must use ../assets -->
+  <link rel="stylesheet" href="../assets/style.css" />
+
+  <style>
+    .model-grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:14px; }
+    @media (max-width: 1200px){ .model-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 720px){ .model-grid { grid-template-columns: 1fr; } }
+
+    .model-card{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fff;
+      padding: 14px;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .model-card:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 10px 22px rgba(16,24,40,.08);
+      border-color: rgba(59,130,246,.35);
+    }
+    .model-card .top{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+    .model-title{
+      display:flex; align-items:center; gap:10px;
+      font-weight: 800; font-size: 18px; margin:0;
+    }
+    .badge{
+      display:inline-flex; align-items:center;
+      font-size:12px; padding:6px 10px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      color: var(--text-muted);
+      background: rgba(15,23,42,.02);
+      white-space: nowrap;
+      position: relative;
+      z-index: 1;
+    }
+    .model-desc{ color: var(--text-muted); margin: 0; line-height: 1.45; position: relative; z-index: 1; }
+
+    .accent{
+      position:absolute; inset:0;
+      background: radial-gradient(800px 220px at 20% -10%, rgba(59,130,246,.18), transparent 55%);
+      pointer-events:none;
+      opacity:.9;
+    }
+    .accent.sarima{ background: radial-gradient(800px 220px at 20% -10%, rgba(59,130,246,.18), transparent 55%); }
+    .accent.lstm{ background: radial-gradient(800px 220px at 20% -10%, rgba(59,130,246,.18), transparent 55%); }
+    .accent.hybrid{ background: radial-gradient(800px 220px at 20% -10%, rgba(59,130,246,.18), transparent 55%); }
+    .accent.ensemble{ background: radial-gradient(800px 220px at 20% -10%, rgba(59,130,246,.18), transparent 55%); }
+
+    .cta-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top: 20px; position: relative; z-index: 1; }
+    .ctaa-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top: 43px; position: relative; z-index: 1; }
+    .cta-row a.btn { margin:0; }
+
+    .table-wrap{
+      overflow:auto;
+      border:1px solid var(--border);
+      border-radius: 12px;
+      background:#fff;
+    }
+    table.metrics-wide{
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1020px;
+    }
+    table.metrics-wide th, table.metrics-wide td{
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      white-space: nowrap;
+    }
+    table.metrics-wide thead th{
+      background: #f9fafb;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    table.metrics-wide tr:last-child td{ border-bottom: none; }
+
+    .muted-small{ color: var(--text-muted); font-size: 13px; }
+    .summary-box{
+      border:1px solid var(--border);
+      border-radius: 12px;
+      background:#fff;
+      padding: 14px;
+      margin-top: 12px;
+    }
+
+    /* Header Styling */
+    .topbar {
+      height: 90px;
+      overflow: visible;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 2px solid rgba(0, 120, 255, 0.1);
+    }
+
+    .content {
+      padding-top: 112px;
+    }
+
+    /* Enhanced Header Styling */
+    .topbar-center {
+      font-size: 2em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: #0078ff;
+      background: linear-gradient(135deg, #0078ff 0%, #3b82f6 50%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      display: inline-block;
+      padding: 8px 24px;
+      margin: 0 auto;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .topbar-center::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #0078ff, #3b82f6, #0078ff, transparent);
+      border-radius: 2px;
+      opacity: 0.5;
+      animation: shimmer-line 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer-line {
+      0%, 100% {
+        opacity: 0.3;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    /* Ensure hamburger button is clickable */
+    .icon-btn {
+      z-index: 1002;
+      position: relative;
+    }
+
+    /* Match background to header */
+    body {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    html {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    /* Logo styling */
+    .header-logo {
+      height: 150px;
+      width: auto;
+      margin-right: 1px;
+      margin-left: -10px;
+      object-fit: contain;
+    }
+
+    /* Disable hover effect on the main Models & Results card */
+    .card:first-of-type:hover {
+      transform: none;
+      border-color: var(--border);
+      box-shadow: none;
+    }
+
+    /* Style for the intro paragraph */
+    .intro-paragraph {
+      font-size: 0.9em;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="icon-btn" aria-label="Menu"><i class="bi bi-list"></i></button>
+    <img src="../saved_model_outputs/logo.png" alt="EurGrid Logo" class="header-logo">
+  </div>
+  <div class="topbar-center">EurGrid</div>
+</header>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    Electricity Demand Forecasting
+    <div class="brand-sub">Bathula Veera • Gagan • Pinky Sherwani</div>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-link" href="../Short Term Electricity Demand Forecasting.html"><i class="bi bi-house-door"></i> Home</a>
+    <a class="nav-link" href="problem.html"><i class="bi bi-bullseye"></i> Understanding the Problem</a>
+    <a class="nav-link" href="dataset.html"><i class="bi bi-database"></i> Dataset</a>
+    <a class="nav-link" href="preprocessing.html"><i class="bi bi-sliders"></i> Pre Processing</a>
+    <a class="nav-link" href="eda.html"><i class="bi bi-graph-up"></i> Exploratory Data Analysis</a>
+    <a class="nav-link" href="features.html"><i class="bi bi-diagram-3"></i> Feature Engineering</a>
+    <a class="nav-link active" href="models.html"><i class="bi bi-cpu"></i> Models & Results</a>
+    <a class="nav-link" href="explainability.html"><i class="bi bi-lightbulb"></i> Explainability</a>
+    <a class="nav-link" href="references.html"><i class="bi bi-book"></i> References</a>
+
+    <div class="nav-divider"></div>
+    <a class="nav-link" id="githubLink"><i class="bi bi-github"></i> Git Repository</a>
+  </nav>
+
+  <div style="padding:14px 16px;color:#cfd8e3;">
+    © <span id="year"></span>
+  </div>
+</aside>
+
+<main class="content">
+  <section class="card">
+    <h1 style="font-weight: bold; font-size: 1.5em; text-align: center;">Models & Results</h1>
+
+    <p class="muted intro-paragraph">
+      We compared SARIMA, LSTM, Hybrid and Ensemble approaches. Each model page contains its
+      own metrics, predictions, and figures.
+    </p>
+
+    <div class="model-grid" style="margin-top: 12px;">
+      <div class="model-card" onclick="location.href='model_sarima.html'">
+        <div class="accent sarima"></div>
+        <div class="top">
+          <h3 class="model-title"><i class="bi bi-graph-up"></i> SARIMA</h3>
+          <span class="badge">Seasonal</span>
+        </div>
+        <p class="model-desc">Seasonal ARIMA baseline for hourly load forecasting.</p>
+        <div class="ctaa-row">
+          <a class="btn" href="model_sarima.html"><i class="bi bi-box-arrow-up-right"></i> Open page</a>
+        </div>
+      </div>
+
+      <div class="model-card" onclick="location.href='model_lstm.html'">
+        <div class="accent lstm"></div>
+        <div class="top">
+          <h3 class="model-title"><i class="bi bi-cpu"></i> LSTM</h3>
+          <span class="badge">Deep Learning</span>
+        </div>
+        <p class="model-desc">Sequence model for non-linear patterns from history + engineered features.</p>
+        <div class="cta-row">
+          <a class="btn" href="model_lstm.html"><i class="bi bi-box-arrow-up-right"></i> Open page</a>
+        </div>
+      </div>
+
+      <div class="model-card" onclick="location.href='model_hybrid.html'">
+        <div class="accent hybrid"></div>
+        <div class="top">
+          <h3 class="model-title"><i class="bi bi-layers"></i> Hybrid</h3>
+          <span class="badge">SARIMA Residual + LSTM</span>
+        </div>
+        <p class="model-desc">SARIMA baseline + LSTM learns from SARIMA residual errors to improve peaks/regimes.</p>
+        <div class="cta-row">
+          <a class="btn" href="model_hybrid.html"><i class="bi bi-box-arrow-up-right"></i> Open page</a>
+        </div>
+      </div>
+
+      <div class="model-card" onclick="location.href='model_ensemble.html'">
+        <div class="accent ensemble"></div>
+        <div class="top">
+          <h3 class="model-title"><i class="bi bi-diagram-2"></i> ENSEMBLE</h3>
+          <span class="badge">Combination</span>
+        </div>
+        <p class="model-desc">Ensemble of SARIMA, LSTM, and Hybrid predictions by timestamp using multiple combinations.</p>
+        <div class="cta-row">
+          <a class="btn" href="model_ensemble.html"><i class="bi bi-box-arrow-up-right"></i> Open page</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+
+    <div class="summary-box">
+      <h2 style="margin:0 0 8px; font-weight: bold;">Summary</h2>
+      <p class="muted" style="margin:0;">
+        SARIMA is the seasonal baseline and underfits (MAE ~11.5k, R2 ≈ -0.84), while LSTM captures non-linear patterns well (MAE ~765, R2 ≈ 0.99). Hybrid performs worst here (MAE ~16.5k), indicating residual learning did not generalize in this setup. Best fit ensemble is the switch-based model (`final_switch_tuned_q083`) with the lowest MAE (~577) and RMSE (~740) and the highest R2 (~0.994).
+      </p>
+    </div>
+    <div class="hero-actions" style="margin-top:12px;">
+      <a class="btn" href="features.html"><i class="bi bi-arrow-left"></i> Feature Engineering</a>
+      <a class="btn primary" href="explainability.html"><i class="bi bi-arrow-right"></i> Explainability</a>
+    </div>
+  </section>
+</main>
+
+<script src="../assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dataset</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css" />
+
+  <style>
+    /* Header Styling */
+    .topbar {
+      height: 90px;
+      overflow: visible;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 2px solid rgba(0, 120, 255, 0.1);
+    }
+
+    .content {
+      padding-top: 112px;
+    }
+
+    /* Enhanced Header Styling */
+    .topbar-center {
+      font-size: 2em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: #0078ff;
+      background: linear-gradient(135deg, #0078ff 0%, #3b82f6 50%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      display: inline-block;
+      padding: 8px 24px;
+      margin: 0 auto;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .topbar-center::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #0078ff, #3b82f6, #0078ff, transparent);
+      border-radius: 2px;
+      opacity: 0.5;
+      animation: shimmer-line 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer-line {
+      0%, 100% {
+        opacity: 0.3;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    /* Ensure hamburger button is clickable */
+    .icon-btn {
+      z-index: 1002;
+      position: relative;
+    }
+
+    /* Match background to header */
+    body {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    html {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    /* Logo styling */
+    .header-logo {
+      height: 150px;
+      width: auto;
+      margin-right: 1px;
+      margin-left: -10px;
+      object-fit: contain;
+    }
+
+    /* Center align and large font size for Dataset heading */
+    .content > section.card:first-of-type {
+      text-align: center;
+    }
+    .content > section.card:first-of-type h1 {
+      font-size: 2.5em;
+      font-weight: 700;
+    }
+
+    /* Bold all h2 headings */
+    .content > section.card h2 {
+      font-weight: 700;
+    }
+
+    /* What we use card with image */
+    .what-we-use-card {
+      position: relative;
+      overflow: visible;
+      min-height: 200px;
+    }
+
+    .dataset-map-img {
+      position: absolute;
+      right: -150px;
+      top: -110px;
+      width: 780px;
+      height: auto;
+      max-height: 800px;
+      object-fit: contain;
+      z-index: 1;
+      border-radius: 0px;
+    }
+
+    .what-we-use-content {
+      position: relative;
+      z-index: 2;
+      margin-right: 270px;
+    }
+
+    @media (max-width: 980px) {
+      .dataset-map-img {
+        position: static;
+        width: 100%;
+        max-width: 300px;
+        margin: 20px auto;
+        display: block;
+      }
+      .what-we-use-content {
+        margin-right: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="icon-btn" aria-label="Menu"><i class="bi bi-list"></i></button>
+    <img src="../saved_model_outputs/logo.png" alt="EurGrid Logo" class="header-logo">
+  </div>
+  <div class="topbar-center">EurGrid</div>
+</header>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    Electricity Demand Forecasting
+    <div class="brand-sub">Bathula Veera • Gagan • Pinky Sherwani</div>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-link" href="../Short Term Electricity Demand Forecasting.html"><i class="bi bi-house-door"></i> Home</a>
+    <a class="nav-link" href="problem.html"><i class="bi bi-bullseye"></i> Understanding the Problem</a>
+    <a class="nav-link active" href="dataset.html"><i class="bi bi-database"></i> Dataset</a>
+    <a class="nav-link" href="preprocessing.html"><i class="bi bi-sliders"></i> Pre Processing</a>
+    <a class="nav-link" href="eda.html"><i class="bi bi-graph-up"></i> Exploratory Data Analysis</a>
+    <a class="nav-link" href="features.html"><i class="bi bi-diagram-3"></i> Feature Engineering</a>
+    <a class="nav-link" href="models.html"><i class="bi bi-cpu"></i> Models & Results</a>
+    <a class="nav-link" href="explainability.html"><i class="bi bi-lightbulb"></i> Explainability</a>
+    <a class="nav-link" href="references.html"><i class="bi bi-book"></i> References</a>
+
+    <div class="nav-divider"></div>
+    <a class="nav-link" id="githubLink"><i class="bi bi-github"></i> Git Repository</a>
+  </nav>
+
+  <div style="padding:14px 16px;color:#cfd8e3;">
+    © <span id="year"></span>
+  </div>
+</aside>
+
+<main class="content">
+  <section class="card">
+    <h1 style="font-size: 1.5em;">Dataset Overview</h1>
+
+    <p>
+      We use the Open Power System Data (OPSD) Time Series dataset (Germany) as the primary source for
+      electricity demand. Weather variables are aligned to the same hourly timestamps (used for
+      LSTM / Hybrid models).
+    </p>
+
+    <!-- KEEP ONLY THIS LINK -->
+    <div class="hero-actions">
+      <a class="btn primary" href="https://data.open-power-system-data.org/time_series/"
+         target="_blank" rel="noopener">
+        <i class="bi bi-box-arrow-up-right"></i> Open OPSD Dataset
+      </a>
+    </div>
+  </section>
+
+  <section class="card what-we-use-card">
+    <img src="../saved_model_outputs/map.png" alt="Germany Map" class="dataset-map-img">
+    <div class="what-we-use-content">
+      <h2>What we use</h2>
+      <ul>
+        <li>Country: Germany</li>
+        <li>Resolution: 60 minutes</li>
+        <li>Target: Electricity load (MW)</li>
+        <li>Additional inputs: Calendar features + weather variables (for LSTM / Hybrid)</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Notes on usage</h2>
+    <ul>
+      <li>All timestamps are standardized to an hourly time index.</li>
+      <li>Missing values are handled during preprocessing to ensure continuity.</li>
+      <li>Processed dataset is shared across SARIMA / LSTM / Hybrid / Ensemble for fair comparison.</li>
+    </ul>
+
+    <div class="hero-actions" style="margin-top:12px;">
+      <a class="btn" href="proble.html"><i class="bi bi-arrow-left"></i> The Problem</a>
+      <a class="btn primary" href="preprocessing.html"><i class="bi bi-arrow-right"></i> Preprocessing</a>
+    </div>
+  </section>
+</main>
+
+<script src="../assets/app.js"></script>
+</body>
+</html>

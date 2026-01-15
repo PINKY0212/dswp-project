@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pre Processing | Alex’s Data Audit</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css" />
+
+  <style>
+    /* ===== Keep your header styling intact ===== */
+    .topbar {
+      height: 90px;
+      overflow: visible;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 2px solid rgba(0, 120, 255, 0.1);
+    }
+    .content { padding-top: 112px; }
+    .topbar-center {
+      font-size: 2em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      background: linear-gradient(135deg, #0078ff 0%, #3b82f6 50%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-transform: uppercase;
+      position: relative;
+      padding: 8px 24px;
+      margin: 0 auto;
+    }
+    .topbar-center::before{
+      content:'';
+      position:absolute; left:0; right:0; bottom:2px;
+      height:3px;
+      background: linear-gradient(90deg, transparent, #0078ff, #3b82f6, #0078ff, transparent);
+      border-radius:2px;
+      opacity:0.5;
+      animation: shimmer-line 3s ease-in-out infinite;
+    }
+    @keyframes shimmer-line { 0%,100%{opacity:0.3;} 50%{opacity:0.7;} }
+    .icon-btn { z-index: 1002; position: relative; }
+    .header-logo { height: 150px; width: auto; margin-left: -10px; object-fit: contain; }
+
+    /* ===== Dashboard layout (like EDA) ===== */
+    .dash{
+      display:block;
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    @media (max-width: 980px){
+      .kpis{ grid-template-columns: 1fr; }
+    }
+    .kpi{
+      border: 2px solid #3b82f6;
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(255,255,255,0.25);
+    }
+    .kpi .label{ color: var(--text-muted); font-size: 16px; font-weight: 700; }
+    .kpi .value{ font-size: 14px; margin-top: 6px; }
+
+    .filters{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .chip{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.18);
+      border-radius: 999px;
+      padding: 8px 10px;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .chip:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+      border-color: #3b82f6;
+    }
+    .chip select, .chip input{
+      border:none;
+      outline:none;
+      background:transparent;
+      font: inherit;
+      min-width: 160px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .cardplot{
+      grid-column: span 6;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow:hidden;
+      cursor:pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+      position: relative;
+    }
+    .cardplot::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.02) 0%, rgba(249, 250, 251, 0.5) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .cardplot:hover::before {
+      opacity: 1;
+    }
+    .cardplot:hover{
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 12px 32px rgba(0, 120, 255, 0.25), 0 6px 16px rgba(0, 120, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+      border-color: rgba(0, 120, 255, 0.4);
+    }
+    .cardplot.wide{ grid-column: span 12; }
+    @media (max-width: 980px){
+      .cardplot{ grid-column: span 12; }
+    }
+
+    .cardplot-head{
+      padding: 16px 18px;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #f3f4f6;
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.04) 0%, rgba(249, 250, 251, 0.8) 100%);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 2;
+      text-align: left;
+    }
+    .cardplot:hover .cardplot-head{
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.08) 0%, rgba(239, 246, 255, 0.9) 100%);
+      border-bottom-color: rgba(0, 120, 255, 0.15);
+    }
+    .cardplot-title{ 
+      font-weight: 600; 
+      margin:0; 
+      font-size: 20px;
+      color: #111827;
+      letter-spacing: -0.01em;
+      transition: color 0.3s ease;
+      text-align: left;
+    }
+    .cardplot:hover .cardplot-title {
+      color: #0078ff;
+    }
+    .cardplot-sub{ 
+      color: #9ca3af; 
+      margin-top: 6px; 
+      line-height: 1.5; 
+      font-size: 14px;
+    }
+    .tag{
+      display:inline-flex; align-items:center; gap:6px;
+      border: 1px solid rgba(0,120,255,0.18);
+      background: rgba(0,120,255,0.08);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .cardplot-body{ 
+      padding: 12px 14px 14px; 
+      position: relative;
+      z-index: 2;
+    }
+    .cardplot-body:has(img:only-child) {
+      padding-bottom: 12px;
+    }
+    .plot-img{
+      width: 100%;
+      height: auto;
+      display:block;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #fff;
+      transition: transform 0.3s ease;
+    }
+    .cardplot:hover .plot-img {
+      transform: scale(1.02);
+    }
+    
+    /* Disable hover on the main section card */
+    section.card:first-of-type:hover {
+      transform: none;
+      border-color: var(--border);
+      box-shadow: none;
+    }
+
+    /* Modal */
+    .modal-overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,0.72);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:9999;
+    }
+    .modal-overlay.open{ display:flex; }
+    .modal{
+      width:min(1100px, 96vw);
+      max-height: 92vh;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(20,24,32,0.96);
+      display:flex;
+      flex-direction:column;
+    }
+    .modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+    }
+    .modal-title{ opacity:0.95; font-weight: 700; color: #fff; }
+    .modal-actions{ display:flex; gap:8px; align-items:center; }
+    .icon-round{
+      width:38px; height:38px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.04);
+      cursor:pointer;
+      color: #fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition: background 0.2s ease;
+    }
+    .icon-round:hover{ background: rgba(255,255,255,0.08); }
+    .modal-body{ overflow:auto; padding:14px; }
+    .modal-body img{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.08);
+    }
+    .modal-cap{ margin-top:10px; opacity:0.9; color: #9ca3af; }
+
+    blockquote{
+      margin: 12px 0 0 0;
+      padding: 12px 14px;
+      border-left: 4px solid var(--primary);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.35);
+    }
+    .who{ color: var(--text-muted); margin-top: 8px; }
+  </style>
+</head>
+
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="icon-btn" aria-label="Menu"><i class="bi bi-list"></i></button>
+    <img src="../saved_model_outputs/logo.png" alt="EurGrid Logo" class="header-logo">
+  </div>
+  <div class="topbar-center">EurGrid</div>
+</header>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    Electricity Demand Forecasting
+    <div class="brand-sub">Bathula Veera • Gagan • Pinky Sherwani</div>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-link" href="../Short Term Electricity Demand Forecasting.html"><i class="bi bi-house-door"></i> Home</a>
+    <a class="nav-link" href="problem.html"><i class="bi bi-bullseye"></i> Understanding the Problem</a>
+    <a class="nav-link" href="dataset.html"><i class="bi bi-database"></i> Dataset</a>
+    <a class="nav-link active" href="preprocessing.html"><i class="bi bi-sliders"></i> Pre Processing</a>
+    <a class="nav-link" href="eda.html"><i class="bi bi-graph-up"></i> Exploratory Data Analysis</a>
+    <a class="nav-link" href="features.html"><i class="bi bi-diagram-3"></i> Feature Engineering</a>
+    <a class="nav-link" href="models.html"><i class="bi bi-cpu"></i> Models & Results</a>
+    <a class="nav-link" href="explainability.html"><i class="bi bi-lightbulb"></i> Explainability</a>
+    <a class="nav-link" href="references.html"><i class="bi bi-book"></i> References</a>
+
+    <div class="nav-divider"></div>
+    <a class="nav-link" id="githubLink"><i class="bi bi-github"></i> Git Repository</a>
+  </nav>
+
+  <div style="padding:14px 16px;color:#cfd8e3;">
+    © <span id="year"></span>
+  </div>
+</aside>
+
+<main class="content">
+
+  <!-- HERO -->
+  <section class="card" style="text-align:center;">
+    <h1 style="font-weight: bold; font-size: 1.5em;">Preprocessing Dashboard: Alex's Historical Data Audit</h1>
+    <p class="muted">
+      Alex does not begin with models. He begins with reliability: coverage, continuity, and data quality.
+    </p>
+
+    
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="label">Raw dataset</div>
+        <div class="value">50,401 rows × ~300 cols</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Audit focus</div>
+        <div class="value">Coverage + missingness</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Window selection</div>
+        <div class="value">2015–2018 (consistent)</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Outcome</div>
+        <div class="value">Model-ready dataset</div>
+      </div>
+    </div>
+
+    <div class="filters" style="justify-content:center;">
+      <div class="chip">
+        <i class="bi bi-funnel"></i>
+        <label for="viewSel" class="muted">View:</label>
+        <select id="viewSel">
+          <option value="all">All checks</option>
+          <option value="coverage">Coverage</option>
+          <option value="overview">Data Overview</option>
+          <option value="missing">Missingness</option>
+          <option value="feature">Feature correlation</option>
+          <option value="feature">Missing by feature</option>
+          <option value="feature">Summary</option>
+        </select>
+      </div>
+      <div class="chip">
+        <i class="bi bi-search"></i>
+        <label for="searchPlots" class="muted">Find:</label>
+        <input id="searchPlots" type="text" placeholder="coverage, overview, missing">
+      </div>
+
+      
+    </div>
+  </section>
+
+  <div class="dash">
+
+    <!-- LEFT -->
+    <section class="card" style="text-align: center;">
+      <h2 style="font-weight: bold; font-size: 1.5em;">Preprocessing Plots</h2>
+      <p class="muted">Click an image to zoom.</p>
+
+      <div class="grid">
+
+        <!-- 1) Initial overview figure (PDF p11) -->        <div class="cardplot"
+             data-group="overview"
+             data-title="Initial Inspection: Distribution & Cycles"
+             data-cap="Verify the signal's range, volatility, and periodicity before cleaning."
+             data-insight="Alex confirms the daily and weekly rhythm and checks that the distribution is operationally plausible."
+             data-why="Bad ranges or broken cycles usually indicate ingestion issues, unit mistakes, or missing intervals.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Data Overview</div>
+              <div class="cardplot-sub">Time series analysis and distribution patterns</div>
+            </div>
+           
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/preprocessing_outputs/output2.png"
+                 alt="Initial inspection overview"
+                 data-modal="true"
+                 data-caption="Comprehensive initial inspection: demand series, distribution, and periodic patterns."/>
+          </div>
+        </div>
+
+        <!-- 2) Coverage plot (PDF p7) -->
+        <div class="cardplot"
+             data-group="coverage"
+             data-title="Temporal Coverage & Control-Region Availability"
+             data-cap="Detect late-start regions and avoid biased training windows."
+             data-insight="DE_LU begins later; Alex selects a consistent 2015–2018 window to prevent structural missingness."
+             data-why="If regions appear/disappear across years, the model can learn artifacts instead of demand behavior.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Temporal coverage by year and timeline availability</div>
+              <div class="cardplot-sub">Coverage analysis across regions and time periods</div>
+            </div>
+           
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/preprocessing_outputs/output1.png"
+                 alt="Temporal coverage analysis"
+                 data-modal="true"
+                 data-caption="Temporal coverage and availability timeline (from preprocessing output)."/>
+          </div>
+        </div>
+
+        <!-- 3) Missing analysis figure (PDF p16) -->
+        <div class="cardplot"
+             data-group="missing"
+             data-title="Missingness Diagnostics"
+             data-cap="Find missing patterns by feature, time, and category."
+             data-insight="Alex identifies where missingness concentrates (by column and by time) before any imputation strategy."
+             data-why="Imputation must respect temporal structure; otherwise, the model’s peak-hour behavior becomes unstable.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Missing Data Processing</div>
+              <div class="cardplot-sub">Heatmap of missing by category + missing over time + missing by month</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/preprocessing_outputs/output3.png"
+                 alt="Missingness analysis"
+                 data-modal="true"
+                 data-caption="Comprehensive missing data analysis across features and time."/>
+          </div>
+        </div>
+         <div class="cardplot"
+         data-group="overview"
+         data-title="Feature Correlation Analysis for Correlation Heatmap and Feature Selection"
+         data-cap="Detect redundant signals and strong relationships that can bias models or inflate importance for feature selection."
+       data-insight="Alex checks correlation to understand redundancy (e.g., TSO loads vs national load) and to avoid leaking signals into the model for feature selection."
+       data-why="High collinearity can destabilize linear models and distort explainability; it also guides feature selection and scaling.">
+       <div class="cardplot-head">
+       <div>
+         <div class="cardplot-title">Feature Correlation</div>
+         <div class="cardplot-sub">Correlation structure across engineered and raw features</div>
+       </div>
+       </div>
+      <div class="cardplot-body" style="padding-bottom: 12px;">
+      <img class="plot-img"
+          src="../saved_model_outputs/preprocessing_outputs/output5.png"
+          alt="Feature correlation heatmap"
+          data-modal="true"
+          data-caption="Feature correlation analysis: identifies redundant and strongly related features."/>
+    </div>
+  </div>
+
+        <div class="cardplot"
+        data-group="missing"
+        data-title="Missing Value Analysis by Features"
+        data-cap="Ranks features by missing percentage to guide dropping vs imputation."
+        data-insight="Alex identifies which features are structurally missing and which are sporadically missing, then applies targeted repair."
+        data-why="Some missingness is out-of-scope (drop), while intermittent missingness needs imputation to prevent model instability.">
+        <div class="cardplot-head">
+        <div>
+        <div class="cardplot-title">Missing by Feature</div>
+        <div class="cardplot-sub">Top missing features ranked by percentage and count</div>
+        </div>
+        </div>
+        <div class="cardplot-body">
+        <img class="plot-img"
+            src="../saved_model_outputs/preprocessing_outputs/output4.png"
+            alt="Missing values by feature"
+            data-modal="true"
+            data-caption="Missing value analysis by feature: top columns ranked by missingness."/>
+        </div>
+        </div>
+
+        <!-- Comprehensive Outlier Detection Analysis -->
+        <div class="cardplot"
+             data-group="overview"
+             data-title="Comprehensive Outlier Detection Analysis"
+             data-cap="Four-panel analysis: box plots of top 5 features with outliers, outlier count by feature, time series with outliers, and outlier percentage by feature."
+             data-insight="Alex identifies features with high outlier counts (e.g., DE_transnetbw_wind_onshore_gen with ~750 outliers) and validates that outliers are temporally distributed rather than systematic errors."
+             data-why="Understanding outlier patterns helps distinguish between data quality issues (systematic) and genuine extreme events (temporal clusters), guiding appropriate treatment strategies.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Outlier Detection Analysis</div>
+              <div class="cardplot-sub">Box plots, counts, time series, and percentage analysis</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/preprocessing_outputs/output6.png"
+                 alt="Comprehensive outlier detection analysis"
+                 data-modal="true"
+                 data-caption="Comprehensive outlier detection: identifies features with high outlier counts and temporal patterns."/>
+          </div>
+        </div>
+
+        <!-- Class Distribution and Class Weights -->
+        <div class="cardplot"
+             data-group="overview"
+             data-title="Class Distribution & Weights for Cost-Sensitive Learning"
+             data-cap="Class imbalance visualization and calculated class weights for balanced model training."
+             data-insight="Alex confirms slight class imbalance (Class 0: 13,257 vs Class 1: 12,893) and applies inverse frequency weighting to ensure balanced learning."
+             data-why="Class imbalance can bias model predictions toward the majority class; weighted learning ensures both classes contribute equally to model training.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Class Distribution & Weights</div>
+              <div class="cardplot-sub">Imbalance analysis and cost-sensitive learning weights</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/preprocessing_outputs/class_weights_visualization_60min.png"
+                 alt="Class distribution and weights"
+                 data-modal="true"
+                 data-caption="Class distribution and weights: addresses class imbalance through cost-sensitive learning."/>
+          </div>
+        </div>
+
+        <!-- Load Time Series: Before vs After Gap Filling -->
+        <div class="cardplot"
+             data-group="missing"
+             data-title="Load Time Series: Before vs After Gap Filling"
+             data-cap="Three-panel comparison: time series overlap, missing values pattern, and load distribution before and after gap filling."
+             data-insight="Alex verifies that gap filling preserves the original signal structure and distribution, with no visible distortion in the time series patterns."
+             data-why="Gap filling must maintain temporal continuity and statistical properties; any distortion would introduce artifacts that models would learn as spurious patterns.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Gap Filling Impact Analysis</div>
+              <div class="cardplot-sub">Time series, missing pattern, and distribution comparison</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/preprocessing_outputs/output7.png"
+                 alt="Before vs after gap filling"
+                 data-modal="true"
+                 data-caption="Gap filling impact: validates that imputation preserves signal structure and distribution."/>
+          </div>
+        </div>
+
+        <!-- Missing Value Imputation Summary -->
+        <div class="cardplot"
+             data-group="missing"
+             data-title="Missing Value Imputation Summary"
+             data-cap="Four-panel dashboard: imputation status, data completeness by feature category, sample time series after imputation, and overall completeness pie chart."
+             data-insight="Alex confirms 100% data completeness across all feature categories (Load, Generation, Price) after imputation, with continuous time series and no remaining gaps."
+             data-why="Complete data coverage is essential for time series models; any remaining gaps would require special handling and could degrade forecast quality.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Imputation Summary Dashboard</div>
+              <div class="cardplot-sub">Status, completeness by category, time series, and overall summary</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/preprocessing_outputs/output8.png"
+                 alt="Missing value imputation summary"
+                 data-modal="true"
+                 data-caption="Missing value imputation summary: confirms 100% data completeness across all categories."/>
+          </div>
+        </div>
+
+        <!-- Outlier Treatment: Before vs After Comparison -->
+        <div class="cardplot"
+             data-group="overview"
+             data-title="Outlier Treatment: Before vs After Comparison"
+             data-cap="Five histograms comparing distributions before and after outlier treatment for key features (load and generation variables)."
+             data-insight="Alex verifies that outlier treatment preserves the underlying distribution characteristics (identical standard deviations), indicating that treatment was conservative and did not distort the data."
+             data-why="Outlier treatment should remove extreme anomalies without altering the core distribution; identical statistics confirm that treatment maintained data integrity.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Outlier Treatment Impact</div>
+              <div class="cardplot-sub">Distribution comparison across five key features</div>
+            </div>
+          </div>
+          <div class="cardplot-body">
+            <img class="plot-img"
+                 src="../saved_model_outputs/preprocessing_outputs/output9.png"
+                 alt="Outlier treatment comparison"
+                 data-modal="true"
+                 data-caption="Outlier treatment impact: validates that treatment preserves distribution characteristics."/>
+          </div>
+        </div>
+
+        <!-- Optional: Narrative card (no plot) -->
+        <div class="cardplot"
+             data-group="overview"
+             data-title="Outcome: Model-ready dataset"
+             data-cap="A clean, consistent dataset is the foundation for SARIMA/LSTM/Hybrid comparisons."
+             data-insight="Alex signs off only after coverage, continuity, and missingness checks pass."
+             data-why="Forecasting improvements are meaningless if data reliability is not guaranteed.">
+          <div class="cardplot-head">
+            <div>
+              <div class="cardplot-title">Preprocessing Summary</div>
+              <div class="cardplot-sub">What Alex "accepts" before modeling begins</div>
+            </div>
+          </div>
+          <div class="cardplot-body" style="padding-bottom: 12px;">
+            <ul style="margin:0; padding-left:18px; text-align: left;">
+              <li>Coverage verified across the modeling window</li>
+              <li>No timestamp gaps in selected interval</li>
+              <li>Missingness characterized before imputation</li>
+              <li>Signal sanity-checked (distribution + cycles)</li>
+              <li>Outliers identified and treated conservatively</li>
+              <li>100% data completeness achieved</li>
+            </ul>
+          </div>
+          <div class="hero-actions" style="justify-content:center; margin-bottom: 24px;">
+            <a class="btn" href="dataset.html"><i class="bi bi-arrow-left"></i> Dataset Overview</a>
+            <a class="btn primary" href="eda.html"><i class="bi bi-arrow-right"></i> Exploratory Data Analysis</a>
+          </div>
+        </div>
+
+      </div>
+      
+    </section>
+
+  </div>
+
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="imgModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Plot viewer">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">Plot</div>
+      <div class="modal-actions">
+        <button class="icon-round" id="prevBtn" aria-label="Previous"><i class="bi bi-chevron-left"></i></button>
+        <button class="icon-round" id="nextBtn" aria-label="Next"><i class="bi bi-chevron-right"></i></button>
+        <button class="icon-round" id="closeBtn" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <img id="modalImg" alt="Expanded plot">
+      <div class="modal-cap" id="modalCap"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/app.js"></script>
+
+<script>
+  // Dashboard filtering (matches your EDA interaction pattern)
+  const viewSel = document.getElementById('viewSel');
+  const searchPlots = document.getElementById('searchPlots');
+  const cards = Array.from(document.querySelectorAll('.cardplot'));
+
+  function applyFilters(){
+    const g = viewSel.value;
+    const q = searchPlots.value.trim().toLowerCase();
+
+    cards.forEach(c => {
+      const matchesGroup = (g === 'all') || (c.dataset.group === g);
+      const text = (c.dataset.title + " " + c.dataset.cap).toLowerCase();
+      const matchesSearch = (!q) || text.includes(q);
+      c.style.display = (matchesGroup && matchesSearch) ? '' : 'none';
+    });
+  }
+  viewSel.addEventListener('change', applyFilters);
+  searchPlots.addEventListener('input', applyFilters);
+
+  // Modal setup
+  const modal = document.getElementById('imgModal');
+  const modalImg = document.getElementById('modalImg');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalCap = document.getElementById('modalCap');
+  const closeBtn = document.getElementById('closeBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  let visibleCards = [];
+  let currentIndex = 0;
+
+  function refreshVisibleCards(){
+    visibleCards = cards.filter(c => c.style.display !== 'none');
+  }
+
+  function openModalByIndex(i){
+    refreshVisibleCards();
+    currentIndex = Math.max(0, Math.min(i, visibleCards.length - 1));
+    const c = visibleCards[currentIndex];
+    const img = c.querySelector('img');
+    if (img) {
+      modalImg.src = img.getAttribute('src');
+      modalTitle.textContent = c.dataset.title || 'Plot';
+      modalCap.textContent = img.getAttribute('data-caption') || c.dataset.cap || '';
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+  }
+  function closeModal(){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    modalImg.src = '';
+  }
+  function nextImg(){ 
+    refreshVisibleCards();
+    if (visibleCards.length > 0) {
+      openModalByIndex((currentIndex + 1) % visibleCards.length); 
+    }
+  }
+  function prevImg(){ 
+    refreshVisibleCards();
+    if (visibleCards.length > 0) {
+      openModalByIndex((currentIndex - 1 + visibleCards.length) % visibleCards.length); 
+    }
+  }
+
+  cards.forEach((c, idx) => {
+    // Clicking on the image opens modal
+    const img = c.querySelector('img[data-modal="true"]');
+    if (img) {
+      img.style.cursor = "zoom-in";
+      img.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openModalByIndex(idx);
+      });
+    }
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (nextBtn) nextBtn.addEventListener('click', nextImg);
+  if (prevBtn) prevBtn.addEventListener('click', prevImg);
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  document.addEventListener('keydown', (e) => {
+    if (!modal || !modal.classList.contains('open')) return;
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowRight') nextImg();
+    if (e.key === 'ArrowLeft') prevImg();
+  });
+</script>
+
+</body>
+</html>

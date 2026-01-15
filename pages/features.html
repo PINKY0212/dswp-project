@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Feature Engineering | Alex’s Feature Blueprint</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css" />
+
+  <style>
+    .hero-split{
+      display:grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 14px;
+      align-items:center;
+    }
+    @media (max-width: 980px){ .hero-split{ grid-template-columns: 1fr; } }
+
+    .kpi-grid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 10px;
+    }
+    @media (max-width: 980px){ .kpi-grid{ grid-template-columns: 1fr; } }
+
+    .kpi{
+      border: 1px solid #0078ff;
+      border-radius: 10px;
+      padding: 14px;
+      background: rgba(255,255,255,0.35);
+      box-shadow: 0 0 8px rgba(0, 120, 255, 0.3), 0 0 16px rgba(0, 120, 255, 0.15), inset 0 0 8px rgba(0, 120, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+    .kpi:hover {
+      box-shadow: 0 0 12px rgba(0, 120, 255, 0.5), 0 0 24px rgba(0, 120, 255, 0.25), inset 0 0 12px rgba(0, 120, 255, 0.15);
+      border-color: rgba(0, 120, 255, 0.7);
+    }
+    .kpi .label{ color: var(--text-muted); margin-bottom: 6px; font-weight: 700; }
+    .kpi .value{ font-size: 18px; }
+
+    .grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 980px){ .grid-2{ grid-template-columns: 1fr; } }
+
+    .cardlet{
+      border:1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      background: rgba(255,255,255,0.25);
+    }
+    .cardlet.acceptance-criteria{
+      border: 1px solid #000000;
+    }
+    .cardlet h3{ margin-top:0; }
+
+    .console{
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #0b1220;
+      color: #e7eef9;
+      overflow:hidden;
+    }
+    .console-head{
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .console-body{
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+    .status{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(156, 163, 175, 0.6);
+      background: rgba(255, 255, 255, 0.9);
+      color: #374151;
+      font-weight: 500;
+      box-shadow: 0 0 8px rgba(156, 163, 175, 0.3), 0 0 16px rgba(156, 163, 175, 0.15);
+      transition: all 0.3s ease;
+    }
+    .status:hover {
+      box-shadow: 0 0 12px rgba(156, 163, 175, 0.5), 0 0 24px rgba(156, 163, 175, 0.25);
+      border-color: rgba(156, 163, 175, 0.8);
+    }
+
+    /* Blue shadow and gray border for all sections */
+    .content .card {
+      box-shadow: 0 8px 24px rgba(0, 120, 255, 0.25), 0 4px 12px rgba(0, 120, 255, 0.15);
+      border: 1px solid #9ca3af;
+    }
+
+    /* Styling for the first card section - matching Short Term Electricity Demand Forecasting.html design */
+    .content > section.card:first-of-type {
+      text-align: center;
+      padding: 32px 24px;
+    }
+
+    .content > section.card:first-of-type h1 {
+      font-size: 2.2em;
+      font-weight: 700;
+      margin: 0 0 12px 0;
+      color: #000000;
+      line-height: 1.2;
+    }
+
+    .content > section.card:first-of-type p.muted {
+      font-size: 14px;
+      color: #9ca3af;
+      margin: 0 auto 24px auto;
+      max-width: 800px;
+      line-height: 1.6;
+    }
+
+    /* Styling for other card sections */
+    .content > section.card:not(:first-of-type) {
+      text-align: center;
+      padding: 32px 24px;
+    }
+
+    .content > section.card h2 {
+      font-size: 1.8em;
+      font-weight: 700;
+      margin: 0 0 12px 0;
+      color: #000000;
+      line-height: 1.2;
+    }
+
+    .content > section.card p.muted {
+      font-size: 14px;
+      color: #9ca3af;
+      margin: 0 auto 24px auto;
+      max-width: 800px;
+      line-height: 1.6;
+    }
+
+    /* Keep grid-2 left-aligned for feature groups */
+    .content > section.card .grid-2 {
+      text-align: left;
+      margin-top: 24px;
+    }
+
+    /* Center KPI grid */
+    .content > section.card .kpi-grid {
+      margin-top: 24px;
+      justify-items: center;
+    }
+
+    /* Center console section */
+    .content > section.card .console {
+      margin-top: 20px;
+    }
+
+    /* Enhanced cardlet styling */
+    .cardlet {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.6);
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .cardlet:hover {
+      box-shadow: 0 4px 16px rgba(0, 120, 255, 0.15);
+      border-color: rgba(0, 120, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .cardlet h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+      margin: 0 0 12px 0;
+    }
+
+    .cardlet p.muted {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 10px;
+    }
+
+    /* Enhanced KPI styling */
+    .kpi {
+      transition: all 0.3s ease;
+    }
+
+    .kpi:hover {
+      box-shadow: 0 4px 12px rgba(0, 120, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    /* Styling for navigation buttons in first section */
+    .content > section.card:first-of-type .hero-actions .btn {
+      padding: 8px 14px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .content > section.card:first-of-type .hero-actions .btn:hover {
+      box-shadow: 0 0 16px rgba(0, 120, 255, 0.4), 0 0 32px rgba(0, 120, 255, 0.2), 0 4px 12px rgba(0, 120, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .content > section.card:first-of-type .hero-actions .btn.primary:hover {
+      box-shadow: 0 0 20px rgba(0, 120, 255, 0.5), 0 0 40px rgba(0, 120, 255, 0.3), 0 4px 16px rgba(0, 120, 255, 0.4);
+    }
+
+    /* Header Styling */
+    .topbar {
+      height: 90px;
+      overflow: visible;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 2px solid rgba(0, 120, 255, 0.1);
+    }
+
+    .content {
+      padding-top: 112px;
+    }
+
+    /* Enhanced Header Styling */
+    .topbar-center {
+      font-size: 2em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: #0078ff;
+      background: linear-gradient(135deg, #0078ff 0%, #3b82f6 50%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      display: inline-block;
+      padding: 8px 24px;
+      margin: 0 auto;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .topbar-center::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #0078ff, #3b82f6, #0078ff, transparent);
+      border-radius: 2px;
+      opacity: 0.5;
+      animation: shimmer-line 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer-line {
+      0%, 100% {
+        opacity: 0.3;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    /* Ensure hamburger button is clickable */
+    .icon-btn {
+      z-index: 1002;
+      position: relative;
+    }
+
+    /* Match background to header */
+    body {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    html {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    /* Logo styling */
+    .header-logo {
+      height: 150px;
+      width: auto;
+      margin-right: 1px;
+      margin-left: -10px;
+      object-fit: contain;
+    }
+
+    /* Plot grid - modern cardplot style */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 12px;
+    }
+    .cardplot{
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow:hidden;
+      cursor:pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+      position: relative;
+    }
+    .cardplot::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.02) 0%, rgba(249, 250, 251, 0.5) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .cardplot:hover::before {
+      opacity: 1;
+    }
+    .cardplot:hover{
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 12px 32px rgba(0, 120, 255, 0.25), 0 6px 16px rgba(0, 120, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+      border-color: rgba(0, 120, 255, 0.4);
+    }
+    @media (max-width: 1200px){
+      .grid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .cardplot-head{
+      padding: 16px 18px;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #f3f4f6;
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.04) 0%, rgba(249, 250, 251, 0.8) 100%);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 2;
+      text-align: left;
+    }
+    .cardplot:hover .cardplot-head{
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.08) 0%, rgba(239, 246, 255, 0.9) 100%);
+      border-bottom-color: rgba(0, 120, 255, 0.15);
+    }
+    .cardplot-title{ 
+      font-weight: 600; 
+      margin:0; 
+      font-size: 20px;
+      color: #111827;
+      letter-spacing: -0.01em;
+      transition: color 0.3s ease;
+      text-align: left;
+    }
+    .cardplot:hover .cardplot-title {
+      color: #0078ff;
+    }
+    .cardplot-sub{ 
+      color: #9ca3af; 
+      margin-top: 6px; 
+      line-height: 1.5; 
+      font-size: 14px;
+    }
+
+    .cardplot-body{ 
+      padding: 12px 14px 14px; 
+      position: relative;
+      z-index: 2;
+    }
+    .plot-img{
+      width: 100%;
+      height: auto;
+      display:block;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #fff;
+      transition: transform 0.3s ease;
+    }
+    .cardplot:hover .plot-img {
+      transform: scale(1.02);
+    }
+
+    /* Modal */
+    .modal-overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,0.72);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:9999;
+    }
+    .modal-overlay.open{ display:flex; }
+    .modal{
+      width:min(1100px, 96vw);
+      max-height: 92vh;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(20,24,32,0.96);
+      display:flex;
+      flex-direction:column;
+    }
+    .modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+    }
+    .modal-title{ opacity:0.95; font-weight: 700; color: #fff; }
+    .modal-actions{ display:flex; gap:8px; align-items:center; }
+    .icon-round{
+      width:38px; height:38px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.04);
+      cursor:pointer;
+      color: #fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition: background 0.2s ease;
+    }
+    .icon-round:hover{ background: rgba(255,255,255,0.08); }
+    .modal-body{ overflow:auto; padding:14px; }
+    .modal-body img{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.08);
+    }
+    .modal-cap{ margin-top:10px; opacity:0.9; color: #9ca3af; }
+  </style>
+</head>
+
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="icon-btn" aria-label="Menu"><i class="bi bi-list"></i></button>
+    <img src="../saved_model_outputs/logo.png" alt="EurGrid Logo" class="header-logo">
+  </div>
+  <div class="topbar-center">EurGrid</div>
+</header>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    Electricity Demand Forecasting
+    <div class="brand-sub">Bathula Veera • Gagan • Pinky Sherwani</div>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-link" href="../Short Term Electricity Demand Forecasting.html"><i class="bi bi-house-door"></i> Home</a>
+    <a class="nav-link" href="problem.html"><i class="bi bi-bullseye"></i> Understanding the Problem</a>
+    <a class="nav-link" href="dataset.html"><i class="bi bi-database"></i> Dataset</a>
+    <a class="nav-link" href="preprocessing.html"><i class="bi bi-sliders"></i> Pre Processing</a>
+    <a class="nav-link" href="eda.html"><i class="bi bi-graph-up"></i> Exploratory Data Analysis</a>
+    <a class="nav-link active" href="features.html"><i class="bi bi-diagram-3"></i> Feature Engineering</a>
+    <a class="nav-link" href="models.html"><i class="bi bi-cpu"></i> Models & Results</a>
+    <a class="nav-link" href="explainability.html"><i class="bi bi-lightbulb"></i> Explainability</a>
+    <a class="nav-link" href="references.html"><i class="bi bi-book"></i> References</a>
+
+    <div class="nav-divider"></div>
+    <a class="nav-link" id="githubLink"><i class="bi bi-github"></i> Git Repository</a>
+  </nav>
+
+  <div style="padding:14px 16px;color:#cfd8e3;">
+    © <span id="year"></span>
+  </div>
+</aside>
+
+<main class="content">
+
+  <section class="card">
+    <h1 style="font-size: 1.5em;">Alex's Feature Blueprint</h1>
+        <p class="muted">
+          After EDA, Alex converts observations into machine-readable signals.
+      The objective is simple: preserve the grid's repeating rhythms (hour/day/week),
+          capture autocorrelation (lags + rolling stats), and inject weather influence without noise.
+        </p>
+
+    <div class="hero-split" style="margin-top: 24px;">
+      <div style="margin-left: 20px;">
+        <div class="hero-actions">
+          <a class="btn" href="eda.html"><i class="bi bi-arrow-left"></i> Exploratory Data Analysis</a>
+          <a class="btn primary" href="models.html"><i class="bi bi-arrow-right"></i> Models & Results</a>
+        </div>
+      </div>
+
+      <div class="cardlet acceptance-criteria" style="position: relative;">
+        <img src="../saved_model_outputs/alex_preprocess.png" alt="Alex" style="position: absolute; left: -300px; top: -10%; width: 200px; height: auto; max-height: 600px; border-radius: 8px; object-fit: contain; z-index: 1;">
+        <div class="status"><i class="bi bi-shield-check"></i> Alex's acceptance criteria</div>
+        <ul style="margin-top:10px; text-align: left;">
+          <li>Features must represent real operational patterns</li>
+          <li>No leakage: time-aware splits only</li>
+          <li>Robust scaling for learning models; target remains original scale</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Final Dataset Snapshot</h2>
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="label">Final shape</div>
+        <div class="value">32,665 rows × 89 features</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Missing values</div>
+        <div class="value">0</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Infinite values</div>
+        <div class="value">0</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Date range</div>
+        <div class="value">2015-01-08 → 2018-09-30</div>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:10px;">
+      Target variable is preserved in original scale; features are normalized using RobustScaler for stable training.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>Feature Engineering Visualizations</h2>
+    <p class="muted">Click an image to zoom. Navigate between images using arrow buttons or keyboard.</p>
+
+    <div class="grid" style="margin-top: 20px;">
+
+      <!-- Feature Normalization -->
+      <div class="cardplot"
+           data-group="normalization"
+           data-title="Feature Normalization: Normalized Feature Distributions"
+           data-cap="Six histograms showing normalized feature distributions for load and generation features after RobustScaler transformation.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Feature Normalization</div>
+            <div class="cardplot-sub">Normalized feature distributions (6 key features)</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/preprocessing_outputs/outputf10.png"
+               alt="Feature normalization"
+               data-modal="true"
+               data-caption="Feature Normalization: Normalized Feature Distributions showing bimodal patterns for load features and right-skewed distributions for solar generation features."/>
+        </div>
+      </div>
+
+      <!-- Calendar Feature Patterns -->
+      <div class="cardplot"
+           data-group="calendar"
+           data-title="Calendar Feature Patterns"
+           data-cap="Six plots showing average load patterns by hour, day of week, month, quarter, heatmap (day vs hour), and year trends.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Calendar Feature Patterns</div>
+            <div class="cardplot-sub">Average load by hour, day, month, quarter, and year</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/preprocessing_outputs/outputf11.png"
+               alt="Calendar feature patterns"
+               data-modal="true"
+               data-caption="Calendar Feature Patterns: comprehensive visualization of temporal patterns including daily cycles, weekly patterns, seasonal variations, and year-over-year trends."/>
+        </div>
+      </div>
+
+      <!-- Final Preprocessed Dataset Summary -->
+      <div class="cardplot"
+           data-group="summary"
+           data-title="Final Preprocessed Dataset Summary"
+           data-cap="Four-panel dashboard: dataset overview (rows/columns/features), feature types distribution, data quality metrics, and target load time series.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Final Dataset Summary</div>
+            <div class="cardplot-sub">Overview, feature types, data quality, and target time series</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/preprocessing_outputs/outputf12.png"
+               alt="Final dataset summary"
+               data-modal="true"
+               data-caption="Final Preprocessed Dataset Summary: 32,688 rows, 83 columns, 77 features with 100% data completeness and clear seasonal patterns in target load."/>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Feature Groups (How Alex builds "signals")</h2>
+
+    <div class="grid-2">
+      <div class="cardlet">
+        <h3><i class="bi bi-calendar3"></i> Calendar features (Step 8)</h3>
+        <ul>
+          <li>Basic: hour, day_of_week, month, quarter, year</li>
+          <li>Cyclical encodings: sin/cos for hour, weekday, month</li>
+          <li>Operational flags: is_weekend, time_of_day, season</li>
+          <li>Degree-days: heating_degree_days, cooling_degree_days</li>
+        </ul>
+        <p class="muted">
+          Purpose: represent predictable operational rhythm so the model does not “re-learn” calendars.
+        </p>
+      </div>
+
+      <div class="cardlet">
+        <h3><i class="bi bi-arrow-repeat"></i> Lagged & rolling features (Step 9)</h3>
+        <ul>
+          <li>Target lags: 1, 2, 3, 6, 12, 24, 48, 168</li>
+          <li>Rolling statistics: mean/std (multiple windows)</li>
+          <li>EMA features: smooth short-term noise</li>
+          <li>Weekly seasonality: same hour last week (lag=168)</li>
+        </ul>
+        <p class="muted">
+          Purpose: encode autocorrelation structure (the core of short-horizon forecasting).
+        </p>
+      </div>
+
+      <div class="cardlet">
+        <h3><i class="bi bi-cloud-sun"></i> Weather proxies (Step 10)</h3>
+        <ul>
+          <li>solar_proxy (from solar generation)</li>
+          <li>wind_proxy (from wind generation)</li>
+          <li>temp_proxy (derived from solar + seasonal context)</li>
+        </ul>
+        <p class="muted">
+          Purpose: keep weather influence, reduce raw noise, and make learning more robust.
+        </p>
+      </div>
+
+      <div class="cardlet">
+        <h3><i class="bi bi-braces"></i> Encoding + normalization (Steps 11–13)</h3>
+        <ul>
+          <li>One-hot encoding: time_of_day, season</li>
+          <li>Infinity handling: no infinite values detected</li>
+          <li>RobustScaler applied to 82 features</li>
+        </ul>
+        <p class="muted">
+          Purpose: stable training for LSTM / hybrid models while preserving interpretability of target.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="imgModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Plot viewer">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">Plot</div>
+      <div class="modal-actions">
+        <button class="icon-round" id="prevBtn" aria-label="Previous"><i class="bi bi-chevron-left"></i></button>
+        <button class="icon-round" id="nextBtn" aria-label="Next"><i class="bi bi-chevron-right"></i></button>
+        <button class="icon-round" id="closeBtn" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <img id="modalImg" alt="Expanded plot">
+      <div class="modal-cap" id="modalCap"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Modal setup with navigation
+  const modal = document.getElementById('imgModal');
+  const modalImg = document.getElementById('modalImg');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalCap = document.getElementById('modalCap');
+  const closeBtn = document.getElementById('closeBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  let visibleCards = [];
+  let currentIndex = 0;
+
+  function refreshVisibleCards(){
+    visibleCards = Array.from(document.querySelectorAll('.cardplot'));
+  }
+
+  function openModalByIndex(i){
+    refreshVisibleCards();
+    currentIndex = Math.max(0, Math.min(i, visibleCards.length - 1));
+    const c = visibleCards[currentIndex];
+    const img = c.querySelector('img[data-modal="true"]');
+    if (img) {
+      modalImg.src = img.getAttribute('src');
+      modalTitle.textContent = c.dataset.title || 'Plot';
+      modalCap.textContent = img.getAttribute('data-caption') || c.dataset.cap || '';
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+  }
+  function closeModal(){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    modalImg.src = '';
+  }
+  function nextImg(){ 
+    refreshVisibleCards();
+    if (visibleCards.length > 0) {
+      openModalByIndex((currentIndex + 1) % visibleCards.length); 
+    }
+  }
+  function prevImg(){ 
+    refreshVisibleCards();
+    if (visibleCards.length > 0) {
+      openModalByIndex((currentIndex - 1 + visibleCards.length) % visibleCards.length); 
+    }
+  }
+
+  document.querySelectorAll('.cardplot img[data-modal="true"]').forEach((img, idx) => {
+    img.style.cursor = "zoom-in";
+    img.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = img.closest('.cardplot');
+      const cardIndex = Array.from(document.querySelectorAll('.cardplot')).indexOf(card);
+      openModalByIndex(cardIndex);
+    });
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (nextBtn) nextBtn.addEventListener('click', nextImg);
+  if (prevBtn) prevBtn.addEventListener('click', prevImg);
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  document.addEventListener('keydown', (e) => {
+    if (!modal || !modal.classList.contains('open')) return;
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowRight') nextImg();
+    if (e.key === 'ArrowLeft') prevImg();
+  });
+</script>
+
+<script src="../assets/app.js"></script>
+</body>
+</html>

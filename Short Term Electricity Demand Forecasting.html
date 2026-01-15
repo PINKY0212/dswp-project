@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Electricity Demand Forecasting | The Grid Guardian</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css" />
+
+  <style>
+    .hero-section {
+      display: grid;
+      gap: 16px;
+      place-items: center;
+      text-align: center;
+    }
+
+    .hero-title {
+      font-size: 32px;
+      margin: 0;
+      color: #000000;
+      font-weight: 700;
+      text-shadow: 0 0 8px rgba(0,120,255,0.85), 0 0 20px rgba(0,120,255,0.45);
+      animation: glow-blue 2.5s ease-in-out infinite;
+    }
+
+    .hero-subtitle {
+      color: var(--text-muted);
+      font-size: 16px;
+      margin: 0;
+      max-width: 900px;
+      justify-self: center;
+    }
+
+    @keyframes glow-blue {
+      0% {
+        text-shadow: 0 0 6px rgba(0,120,255,0.25), 0 0 12px rgba(0,120,255,0.15);
+      }
+      50% {
+        text-shadow: 0 0 14px rgba(0,120,255,0.95), 0 0 30px rgba(0,120,255,0.6);
+      }
+      100% {
+        text-shadow: 0 0 6px rgba(0,120,255,0.25), 0 0 12px rgba(0,120,255,0.15);
+      }
+    }
+
+    /* Sliding heading (right -> left) */
+    .slide-title-container {
+      overflow: hidden;
+      text-align: center;
+      margin-bottom: 30px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .slide-title {
+      display: inline-block;
+      white-space: nowrap;
+      transform: translateX(100vw);
+      animation: slide-rtl 2.5s ease-in-out forwards;
+      animation-delay: 0s;
+      font-weight: 700;
+    }
+
+    @keyframes slide-rtl {
+      from { transform: translateX(100vw); }
+      to   { transform: translateX(0); }
+    }
+
+    /* Typewriter (letter-by-letter) */
+    .type-char {
+      opacity: 0;
+      display: inline;
+      transform: translateY(6px);
+      transition: opacity 0.08s ease, transform 0.08s ease;
+    }
+    .type-char.visible { opacity: 1; transform: translateY(0); }
+    .type-char.emphasized {
+      font-weight: 700;
+      font-size: 1.15em;
+    }
+
+    .typewriter-cursor {
+      display: inline-block;
+      width: 6px;
+      height: 1em;
+      background: var(--text-muted);
+      margin-left: 6px;
+      vertical-align: bottom;
+      animation: blink 1s steps(1) infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Card containing Alex section - position relative for absolute image */
+    .alex-card {
+      position: relative;
+      overflow: visible;
+      padding-bottom: 10px;
+      min-height: 280px;
+    }
+
+    .guardian-card {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      align-items: start;
+      align-content: start;
+      margin-top: -10px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      position: relative;
+    }
+
+    .guardian-card > div {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (max-width: 980px) {
+      .guardian-card {
+        grid-template-columns: 1fr;
+        gap: 0px;
+      }
+      .guardian-card .guardian-img { justify-self: center; }
+      .guardian-card > div {
+        justify-content: center;
+      }
+    }
+
+    .guardian-img {
+      position: absolute;
+      left: 0;
+      top: -225px;
+      width: 270px;
+      height: auto;
+      max-height: calc(100vh - 200px);
+      border-radius: 0;
+      border: none;
+      object-fit: contain;
+      object-position: top left;
+      background: transparent;
+      padding: 0;
+      display: block;
+      z-index: 1;
+    }
+
+    blockquote {
+      margin: 0 auto -50px auto;
+      padding: 10px 12px;
+      border-left: 10px solid var(--border);
+      background: rgba(255,255,255,0.4);
+      border-radius: 8px;
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
+      position: relative;
+      z-index: 2;
+      margin-left: 300px;
+    }
+
+    .journey-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 980px) {
+      .journey-steps {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .step-card {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .step-card:hover {
+      transform: scale(1.05);
+      border: 1px solid #0078ff;
+      box-shadow: 0 8px 24px rgba(0, 120, 255, 0.3);
+    }
+
+    .workflow-title {
+      font-weight: 700;
+      font-size: 1.3em;
+    }
+
+    .step-card h2 {
+      margin: 0 0 8px 0;
+      font-size: 1.4em;
+      font-weight: 600;
+    }
+
+    .step-card p {
+      margin: 0 0 10px 0;
+      font-size: 0.9em;
+      color: var(--text-muted);
+    }
+
+    .technical-study h2 {
+      font-weight: 600;
+      font-size: 1.4em;
+    }
+
+    .technical-study p {
+      color: var(--text-muted);
+    }
+
+    /* Header GIF */
+    .topbar {
+      height: 90px;
+      overflow: visible;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 2px solid rgba(0, 120, 255, 0.1);
+    }
+
+    .content {
+      padding-top: 112px;
+    }
+
+    /* Enhanced Header Styling */
+    .topbar-center {
+      font-size: 2em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: #0078ff;
+      background: linear-gradient(135deg, #0078ff 0%, #3b82f6 50%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      display: inline-block;
+      padding: 8px 24px;
+      margin: 0 auto;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .topbar-center::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #0078ff, #3b82f6, #0078ff, transparent);
+      border-radius: 2px;
+      opacity: 0.5;
+      animation: shimmer-line 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer-line {
+      0%, 100% {
+        opacity: 0.3;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    /* Ensure hamburger button is clickable */
+    .icon-btn {
+      z-index: 1002;
+      position: relative;
+    }
+
+    /* Sidebar default closed */
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+    }
+
+    body:not(.sidebar-collapsed) .sidebar {
+      transform: translateX(0);
+    }
+
+    /* Match background to header */
+    body {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    html {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    /* Logo styling */
+    .header-logo {
+      height: 150px;
+      width: auto;
+      margin-right: 1px;
+      margin-left: -10px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+
+<body class="sidebar-collapsed">
+
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="icon-btn"><i class="bi bi-list"></i></button>
+    <img src="saved_model_outputs/logo.png" alt="EurGrid Logo" class="header-logo">
+  </div>
+  <div class="topbar-center">EurGrid</div>
+</header>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    Electricity Demand Forecasting
+    <div class="brand-sub">Bathula Veera • Gagan • Pinky Sherwani</div>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-link active" href="Short Term Electricity Demand Forecasting.html"><i class="bi bi-house-door"></i> Home</a>
+    <a class="nav-link" href="pages/problem.html"><i class="bi bi-bullseye"></i> Understanding the Problem</a>
+    <a class="nav-link" href="pages/dataset.html"><i class="bi bi-database"></i> Dataset</a>
+    <a class="nav-link" href="pages/preprocessing.html"><i class="bi bi-sliders"></i> Pre Processing</a>
+    <a class="nav-link" href="pages/eda.html"><i class="bi bi-graph-up"></i> Exploratory Data Analysis</a>
+    <a class="nav-link" href="pages/features.html"><i class="bi bi-diagram-3"></i> Feature Engineering</a>
+    <a class="nav-link" href="pages/models.html"><i class="bi bi-cpu"></i> Models & Results</a>
+    <a class="nav-link" href="pages/explainability.html"><i class="bi bi-lightbulb"></i> Explainability</a>
+    <a class="nav-link" href="pages/references.html"><i class="bi bi-book"></i> References</a>
+
+    <div class="nav-divider"></div>
+    <a class="nav-link" id="githubLink"><i class="bi bi-github"></i> Git Repository</a>
+  </nav>
+
+  <div style="padding:14px 16px;color:#cfd8e3;">
+    © <span id="year"></span>
+  </div>
+</aside>
+
+<main class="content">
+
+  <!-- Landing Hero -->
+  <section class="card hero-section" style="position: relative;">
+    <img src="saved_model_outputs/pixel.png" alt="Pixel" style="position: absolute; right: -1px; top: -10px; width: 500px; height: auto; max-height: 300px; border-radius: 8px; object-fit: contain; z-index: 1;">
+    <h1 class="hero-title">Keeping the Lights On</h1>
+
+    <p class="hero-subtitle">
+      Every hour, millions of homes depend on one decision: how much electricity should be produced right now?
+      This website demonstrates how statistical and deep learning models help Alex, the Grid Operations Engineer,
+      make accurate and transparent short-term demand forecasts.
+    </p>
+
+    <div class="hero-actions">
+      <a class="btn primary" href="pages/problem.html">
+        <i class="bi bi-play-circle"></i> Start the Story
+      </a>
+      <a class="btn" href="pages/models.html">
+        <i class="bi bi-bar-chart"></i> View Results
+      </a>
+    </div>
+  </section>
+
+  <!-- Character Intro -->
+  <section class="card alex-card">
+    <div class="slide-title-container">
+      <h2 class="slide-title" style="font-size: 1.9em;">ALEX — The Grid Guardian</h2>
+    </div>
+
+    <div class="guardian-card">
+      <img src="saved_model_outputs/alex.png" alt="Alex" class="guardian-img">
+      <div>
+        <blockquote id="intro-quote">
+          Alex is a Senior Grid Operations Engineer at EurGrid who keeps the European power grid stable. He relies on forecasting models, so they must be accurate, reliable, and easy to understand. 
+          Follow Alex as he moves through each phase of the data science lifecycle and evaluates how different models perform under real-world operating conditions.
+        </blockquote>
+      </div>
+    </div>
+  </section>
+
+  <!-- Project Workflow -->
+  <section class="card">
+    <h2 class="workflow-title">Alex's Evaluation Workflow</h2>
+
+    <div class="journey-steps">
+      <div class="step-card">
+        <h2>Understanding the Problem</h2>
+        <p>
+          Alex first defines what a good forecast means for operators and why peak hours require
+          special attention.
+        </p>
+        <div class="mini-actions">
+          <a class="btn primary" href="pages/problem.html">The Problem</a>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <h2>Preprocessing the Data</h2>
+        <p>
+          Raw energy and weather data contain gaps and inconsistencies.
+          Alex ensures data quality before predictions begin.
+        </p>
+        <div class="mini-actions">
+          <a class="btn primary" href="pages/preprocessing.html">Clean Data</a>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <h2>Exploratory Data Analysis</h2>
+        <p>
+          Alex studies historical trends and correlations to understand the patterns
+          driving electricity demand.
+        </p>
+        <div class="mini-actions">
+          <a class="btn primary" href="pages/eda.html">Analyze Data</a>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <h2>Feature Engineering</h2>
+        <p>
+          Past demand lags, calendar signals, and weather drivers are engineered
+          to help advanced models reason effectively.
+        </p>
+        <div class="mini-actions">
+          <a class="btn primary" href="pages/features.html">View Features</a>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <h2>Models & Results</h2>
+        <p>
+          Alex compares SARIMA, LSTM, Hybrid, and Ensemble approaches
+          using MAE and RMSE metrics.
+        </p>
+        <div class="mini-actions">
+          <a class="btn primary" href="pages/models.html">Compare Models</a>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <h2>Explainability</h2>
+        <p>
+          SHAP explanations reveal what drives neural network forecasts,
+          allowing Alex to rely on them confidently.
+        </p>
+        <div class="mini-actions">
+          <a class="btn primary" href="pages/explainability.html">View XAI</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Call to Action -->
+  <section class="card technical-study">
+    <h2>Explore the Technical Study</h2>
+    <p>
+      This website contains the interactive visualizations and performance comparisons
+      produced from real forecasting scripts implemented in Python and Jupyter notebooks.
+    </p>
+
+    <div class="hero-actions">
+      <a class="btn" href="pages/dataset.html"><i class="bi bi-database"></i> Dataset Overview</a>
+      <a class="btn" href="https://github.com/Mech123/dswp_group2" target="_blank" rel="noopener"><i class="bi bi-github"></i> Git Repository</a>
+      <a class="btn" href="pages/references.html"><i class="bi bi-book"></i> References</a>
+    </div>
+  </section>
+
+</main>
+
+<script src="assets/app.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('intro-quote');
+  if (!el) return;
+  const fullText = el.textContent.replace(/\s+/g, ' ').trim();
+  el.innerHTML = '';
+
+  const cursor = document.createElement('span');
+  cursor.className = 'typewriter-cursor';
+  el.appendChild(cursor);
+
+  const perChar = 30;
+  const punctPause = 250;
+  let delay = 0;
+
+  // Find the start and end positions of the emphasized sentence
+  const emphasizedStart = fullText.indexOf('Follow Alex');
+  const emphasizedEnd = fullText.indexOf('conditions.') + 'conditions.'.length;
+
+  for (let i = 0; i < fullText.length; i++) {
+    const ch = fullText[i];
+    const span = document.createElement('span');
+    span.className = 'type-char';
+    // Apply emphasized class if within the target sentence range
+    if (i >= emphasizedStart && i < emphasizedEnd) {
+      span.classList.add('emphasized');
+    }
+    span.textContent = ch;
+    el.insertBefore(span, cursor);
+
+    const extra = /[.,—–!?;]/.test(ch) ? punctPause : 0;
+    setTimeout(((s) => () => s.classList.add('visible'))(span), delay);
+    delay += perChar + extra;
+  }
+
+  setTimeout(() => { 
+    cursor.style.display = 'none';
+    cursor.remove();
+  }, delay + 200);
+});
+</script>
+
+</body>
+</html>

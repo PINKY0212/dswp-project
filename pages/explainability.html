@@ -1,0 +1,1750 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Explainability | LSTM Model XAI</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/style.css" />
+
+  <style>
+    /* Header Styling */
+    .topbar {
+      height: 90px;
+      overflow: visible;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 2px solid rgba(0, 120, 255, 0.1);
+    }
+    .content { padding-top: 112px; }
+    .topbar-center {
+      font-size: 2em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: #0078ff;
+      background: linear-gradient(135deg, #0078ff 0%, #3b82f6 50%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      display: inline-block;
+      padding: 8px 24px;
+      margin: 0 auto;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+    .topbar-center::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #0078ff, #3b82f6, #0078ff, transparent);
+      border-radius: 2px;
+      opacity: 0.5;
+      animation: shimmer-line 3s ease-in-out infinite;
+    }
+    @keyframes shimmer-line { 0%,100%{opacity:0.3;} 50%{opacity:0.7;} }
+    .icon-btn { z-index: 1002; position: relative; }
+    body { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); }
+    html { background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); }
+    .header-logo { height: 150px; width: auto; margin-right: 1px; margin-left: -10px; object-fit: contain; }
+
+    /* Plot grid - modern cardplot style */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 12px;
+    }
+    .cardplot{
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow:hidden;
+      cursor:pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+      position: relative;
+    }
+    .cardplot::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.02) 0%, rgba(249, 250, 251, 0.5) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .cardplot:hover::before {
+      opacity: 1;
+    }
+    .cardplot:hover{
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 12px 32px rgba(0, 120, 255, 0.25), 0 6px 16px rgba(0, 120, 255, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+      border-color: rgba(0, 120, 255, 0.4);
+    }
+    @media (max-width: 1200px){
+      .grid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .cardplot-head{
+      padding: 16px 18px;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #f3f4f6;
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.04) 0%, rgba(249, 250, 251, 0.8) 100%);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 2;
+      text-align: left;
+    }
+    .cardplot:hover .cardplot-head{
+      background: linear-gradient(135deg, rgba(0, 120, 255, 0.08) 0%, rgba(239, 246, 255, 0.9) 100%);
+      border-bottom-color: rgba(0, 120, 255, 0.15);
+    }
+    .cardplot-title{ 
+      font-weight: 600; 
+      margin:0; 
+      font-size: 20px;
+      color: #111827;
+      letter-spacing: -0.01em;
+      transition: color 0.3s ease;
+      text-align: left;
+    }
+    .cardplot:hover .cardplot-title {
+      color: #0078ff;
+    }
+    .cardplot-sub{ 
+      color: #9ca3af; 
+      margin-top: 6px; 
+      line-height: 1.5; 
+      font-size: 14px;
+    }
+
+    .cardplot-body{ 
+      padding: 12px 14px 14px; 
+      position: relative;
+      z-index: 2;
+    }
+    .plot-img{
+      width: 100%;
+      height: auto;
+      display:block;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #fff;
+      transition: transform 0.3s ease;
+    }
+    .cardplot:hover .plot-img {
+      transform: scale(1.02);
+    }
+
+    /* Panel styling */
+    .panel{
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.35);
+      padding: 14px;
+      box-shadow: 0 10px 26px rgba(0,0,0,0.06);
+      transition: all 0.3s ease;
+      margin-top: 20px;
+    }
+    .panel:hover{
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(59, 130, 246, 0.25), 0 6px 16px rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    /* Grid 2 columns */
+    .grid-2{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:14px; margin-top: 12px; }
+    @media (max-width: 980px){ .grid-2 { grid-template-columns: 1fr; } }
+
+    /* Modal */
+    .modal-overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,0.72);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:9999;
+    }
+    .modal-overlay.open{ display:flex; }
+    .modal{
+      width:min(1100px, 96vw);
+      max-height: 92vh;
+      overflow:hidden;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.12);
+      background: rgba(20,24,32,0.96);
+      display:flex;
+      flex-direction:column;
+    }
+    .modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+    }
+    .modal-title{ opacity:0.95; font-weight: 700; color: #fff; }
+    .modal-actions{ display:flex; gap:8px; align-items:center; }
+    .icon-round{
+      width:38px; height:38px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.04);
+      cursor:pointer;
+      color: #fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition: background 0.2s ease;
+    }
+    .icon-round:hover{ background: rgba(255,255,255,0.08); }
+    .modal-body{ overflow:auto; padding:14px; }
+    .modal-body img{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.08);
+    }
+    .modal-cap{ margin-top:10px; opacity:0.9; color: #9ca3af; }
+
+    /* Table styling */
+    .shap-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .shap-table thead {
+      background: #f9fafb;
+    }
+    .shap-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 700;
+      border-bottom: 2px solid var(--border);
+    }
+    .shap-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .shap-table tbody tr:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .shap-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .shap-value {
+      font-family: ui-monospace, monospace;
+      font-weight: 600;
+      color: #3b82f6;
+    }
+    .feature-rank {
+      font-weight: 700;
+      color: var(--text-muted);
+      width: 50px;
+    }
+    .feature-name {
+      font-weight: 500;
+    }
+
+    /* Tabs */
+    .tabs { 
+      display:flex; 
+      flex-wrap:wrap; 
+      gap:8px; 
+      margin: 20px 0 0; 
+      justify-content:center; 
+    }
+    .tab{
+      display:inline-flex; 
+      align-items:center; 
+      gap:8px;
+      padding: 8px 10px; 
+      border:1px solid var(--border); 
+      border-radius: 999px;
+      text-decoration:none; 
+      color: var(--text-main); 
+      background:#fff;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease, color .12s ease, border-color .12s ease;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+    .tab:hover{ 
+      transform: translateY(-2px); 
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.15);
+      border-color: #3b82f6;
+    }
+    .tab.active{ 
+      background: var(--primary); 
+      border-color: var(--primary); 
+      color:#fff; 
+    }
+    .tab:focus {
+      outline: none;
+    }
+    .tab:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    /* Model sections */
+    .model-section {
+      display: none;
+    }
+    .model-section.active {
+      display: block;
+    }
+
+    /* Instance explanation */
+    .instance-selector {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 20px 0;
+      padding: 16px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .instance-selector input, .instance-selector select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .instance-selector button {
+      padding: 8px 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .instance-selector button:hover {
+      opacity: 0.9;
+    }
+    .prediction-breakdown {
+      margin-top: 20px;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .prediction-header {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+    }
+    .prediction-metric {
+      text-align: center;
+    }
+    .prediction-metric .label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .prediction-metric .value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #3b82f6;
+    }
+    .prediction-metric .value.actual {
+      color: #10b981;
+    }
+    .prediction-metric .value.error {
+      color: #ef4444;
+    }
+    .feature-contributions {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .contribution-row {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      margin: 4px 0;
+      border-radius: 8px;
+      background: rgba(59, 130, 246, 0.05);
+      transition: all 0.2s;
+    }
+    .contribution-row:hover {
+      background: rgba(59, 130, 246, 0.1);
+    }
+    .contribution-row.positive {
+      border-left: 4px solid #10b981;
+    }
+    .contribution-row.negative {
+      border-left: 4px solid #ef4444;
+    }
+    .contribution-feature {
+      flex: 1;
+      font-weight: 500;
+    }
+    .contribution-value {
+      font-family: ui-monospace, monospace;
+      font-weight: 600;
+      min-width: 120px;
+      text-align: right;
+    }
+    .contribution-value.positive {
+      color: #10b981;
+    }
+    .contribution-value.negative {
+      color: #ef4444;
+    }
+    .base-value {
+      padding: 12px;
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 8px;
+      margin: 12px 0;
+      font-weight: 600;
+      text-align: center;
+    }
+    .final-prediction {
+      padding: 12px;
+      background: rgba(16, 185, 129, 0.1);
+      border-radius: 8px;
+      margin: 12px 0;
+      font-weight: 700;
+      text-align: center;
+      font-size: 18px;
+      color: #10b981;
+    }
+  </style>
+</head>
+
+<body>
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="icon-btn" aria-label="Menu"><i class="bi bi-list"></i></button>
+    <img src="../saved_model_outputs/logo.png" alt="EurGrid Logo" class="header-logo">
+  </div>
+  <div class="topbar-center">EurGrid</div>
+</header>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    Electricity Demand Forecasting
+    <div class="brand-sub">Bathula Veera • Gagan • Pinky Sherwani</div>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-link" href="../index.html"><i class="bi bi-house-door"></i> Home</a>
+    <a class="nav-link" href="problem.html"><i class="bi bi-bullseye"></i> Understanding the Problem</a>
+    <a class="nav-link" href="dataset.html"><i class="bi bi-database"></i> Dataset</a>
+    <a class="nav-link" href="preprocessing.html"><i class="bi bi-sliders"></i> Pre Processing</a>
+    <a class="nav-link" href="eda.html"><i class="bi bi-graph-up"></i> Exploratory Data Analysis</a>
+    <a class="nav-link" href="features.html"><i class="bi bi-diagram-3"></i> Feature Engineering</a>
+    <a class="nav-link" href="models.html"><i class="bi bi-cpu"></i> Models & Results</a>
+    <a class="nav-link active" href="explainability.html"><i class="bi bi-lightbulb"></i> Explainability</a>
+    <a class="nav-link" href="references.html"><i class="bi bi-book"></i> References</a>
+
+    <div class="nav-divider"></div>
+    <a class="nav-link" id="githubLink"><i class="bi bi-github"></i> Git Repository</a>
+  </nav>
+
+  <div style="padding:14px 16px;color:#cfd8e3;">
+    © <span id="year"></span>
+  </div>
+</aside>
+
+<main class="content">
+
+  <!-- HERO -->
+  <section class="card" style="text-align:center;">
+    <h1 id="heroTitle" style="font-weight: bold; font-size: 2.2em; text-align: center;">LSTM Model Explainability</h1>
+    <p id="heroSubtitle" class="muted" style="font-size: 0.9em; text-align: center;">
+      Explainable AI (XAI) using SHAP Values
+    </p>
+    <p id="heroDescription" class="muted" style="font-size: 0.85em; text-align: center; margin-top: 8px;">
+      Understanding how models make predictions through SHAP (SHapley Additive exPlanations) analysis.<br>
+      Explore global feature importance, local explanations, and scenario-based insights for each model.
+    </p>
+
+    <div class="tabs">
+      <a class="tab active" data-model="lstm"><i class="bi bi-cpu"></i> LSTM</a>
+      <a class="tab" data-model="hybrid"><i class="bi bi-layers"></i> Hybrid</a>
+      <a class="tab" data-model="ensemble"><i class="bi bi-diagram-2"></i> Ensemble</a>
+    </div>
+
+    <div class="hero-actions" style="justify-content:center; margin-top:20px;">
+      <a class="btn" href="models.html"><i class="bi bi-arrow-left"></i> Models</a>
+      <a class="btn primary" href="references.html"><i class="bi bi-arrow-right"></i> References</a>
+    </div>
+  </section>
+
+  <!-- Introduction -->
+  <section class="card" id="whyExplainabilityCard">
+    <h2 style="font-weight: bold; font-size: 1.5em;">Why Explainability Matters</h2>
+    <p class="muted" style="text-align: left; line-height: 1.6;">
+      Machine learning models, especially deep learning models like LSTM, are powerful but often act as "black boxes." SHAP values provide interpretable explanations by quantifying each feature's contribution to individual predictions. This helps grid operators understand model decisions, identify important factors, and build trust in automated forecasting systems.
+    </p>
+  </section>
+
+  <!-- LSTM Section -->
+  <div id="lstm-section" class="model-section active">
+  
+  <!-- Instance-Level Explanation -->
+  <section class="card" style="text-align: center;">
+    <h2 style="font-weight: bold; font-size: 1.5em;">Instance-Level Explanation</h2>
+    <p class="muted">Select a specific prediction to see exactly why the model made that prediction.</p>
+
+    <div class="instance-selector">
+      <label><strong>Select Date & Time:</strong></label>
+      <input type="date" id="instanceDate" value="2018-01-02" min="2015-01-08" max="2018-09-30">
+      <select id="instanceHour">
+        <option value="0">00:00</option>
+        <option value="1">01:00</option>
+        <option value="2">02:00</option>
+        <option value="3">03:00</option>
+        <option value="4">04:00</option>
+        <option value="5">05:00</option>
+        <option value="6">06:00</option>
+        <option value="7">07:00</option>
+        <option value="8" selected>08:00</option>
+        <option value="9">09:00</option>
+        <option value="10">10:00</option>
+        <option value="11">11:00</option>
+        <option value="12">12:00</option>
+        <option value="13">13:00</option>
+        <option value="14">14:00</option>
+        <option value="15">15:00</option>
+        <option value="16">16:00</option>
+        <option value="17">17:00</option>
+        <option value="18">18:00</option>
+        <option value="19">19:00</option>
+        <option value="20">20:00</option>
+        <option value="21">21:00</option>
+        <option value="22">22:00</option>
+        <option value="23">23:00</option>
+      </select>
+      <button onclick="loadInstanceExplanation()" id="explainBtn"><i class="bi bi-search"></i> Predict Load</button>
+      <p class="muted" style="margin: 10px 0 0 0; font-size: 0.85em; text-align: center;">
+        Date and Time Available: 2015-01-08 → 2018-09-30
+      </p>
+    </div>
+
+    <div id="loadingState" class="muted" style="text-align:center; padding:20px; display:none;">
+      <i class="bi bi-hourglass-split"></i> Loading prediction data...
+    </div>
+
+    <div id="instanceExplanation" style="display:none;">
+      <div class="prediction-breakdown">
+        <div class="prediction-header">
+          <div class="prediction-metric">
+            <div class="label">Predicted</div>
+            <div class="value" id="predValue">–</div>
+          </div>
+          <div class="prediction-metric">
+            <div class="label">Actual</div>
+            <div class="value actual" id="actualValue">–</div>
+          </div>
+          <div class="prediction-metric">
+            <div class="label">Error</div>
+            <div class="value error" id="errorValue">–</div>
+          </div>
+          <div class="prediction-metric">
+            <div class="label">Type</div>
+            <div class="value" id="peakLabel" style="font-size:16px;">–</div>
+          </div>
+        </div>
+
+        <h3 style="margin:20px 0 10px; text-align:left;">Prediction Breakdown</h3>
+        <div class="base-value">
+          Base Value (Expected): <span id="baseValue">–</span> MW
+        </div>
+        <div style="margin:12px 0; font-weight:600; text-align:center;">+ Feature Contributions</div>
+        <div class="feature-contributions" id="featureContributions">
+          <!-- Feature contributions will be loaded here -->
+        </div>
+        <div class="final-prediction">
+          Final Prediction: <span id="finalPrediction">–</span> MW
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Global Feature Importance -->
+  <section class="card" style="text-align: center;">
+    <h2 style="font-weight: bold; font-size: 1.5em;">Global Feature Importance</h2>
+    <p class="muted">Overall feature contributions across all predictions. Click images to zoom.</p>
+
+    <div class="grid" style="margin-top: 20px;">
+
+      <!-- SHAP Summary Plot -->
+      <div class="cardplot"
+           data-group="global"
+           data-title="SHAP Summary Plot"
+           data-cap="Global feature importance showing how each feature impacts predictions across the dataset.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">SHAP Summary Plot</div>
+            <div class="cardplot-sub">Feature importance and value distribution</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/lstm_outputs/shap_summary_plot.png"
+               alt="SHAP Summary Plot"
+               data-modal="true"
+               data-caption="SHAP summary plot showing global feature importance. Features are ranked by mean absolute SHAP value. Color indicates feature value (red=high, blue=low), and horizontal position shows impact on prediction."/>
+        </div>
+      </div>
+
+      <!-- SHAP Bar Plot -->
+      <div class="cardplot"
+           data-group="global"
+           data-title="SHAP Bar Plot"
+           data-cap="Mean absolute SHAP values ranking features by overall importance.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">SHAP Bar Plot</div>
+            <div class="cardplot-sub">Top features by mean |SHAP| value</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/lstm_outputs/shap_bar_plot.png"
+               alt="SHAP Bar Plot"
+               data-modal="true"
+               data-caption="SHAP bar plot ranking features by mean absolute SHAP value. Higher bars indicate features with greater overall impact on model predictions."/>
+        </div>
+      </div>
+
+      <!-- Partial Dependence -->
+      <div class="cardplot"
+           data-group="global"
+           data-title="Partial Dependence Plot"
+           data-cap="Marginal effect of features on predictions, showing how predictions change as feature values vary.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Partial Dependence Plot</div>
+            <div class="cardplot-sub">Marginal feature effects</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/lstm_outputs/shap_partial_dependence.png"
+               alt="Partial Dependence"
+               data-modal="true"
+               data-caption="Partial dependence plots showing how model predictions change as individual feature values vary, holding other features constant."/>
+        </div>
+      </div>
+
+    </div>
+
+    
+  </section>
+
+  <!-- Local Explanations -->
+  <section class="card" style="text-align: center;">
+    <h2 style="font-weight: bold; font-size: 1.5em;">Local Explanations (Instance-Level)</h2>
+    <p class="muted">How individual predictions are made. Waterfall plots show feature contributions for specific time points.</p>
+
+    <div class="grid" style="margin-top: 20px;">
+
+      <!-- Waterfall Peak Load -->
+      <div class="cardplot"
+           data-group="local"
+           data-title="Waterfall Plot - Peak Load"
+           data-cap="Feature contributions for a peak-load prediction, showing which features drive high demand forecasts.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Peak Load Prediction</div>
+            <div class="cardplot-sub">Feature contributions during high demand</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/lstm_outputs/shap_waterfall_peak_load.png"
+               alt="Waterfall Peak Load"
+               data-modal="true"
+               data-caption="Waterfall plot for a peak-load prediction. Shows how each feature contributes to the final prediction, starting from the base value and adding feature contributions."/>
+        </div>
+      </div>
+
+      <!-- Waterfall Normal Load -->
+      <div class="cardplot"
+           data-group="local"
+           data-title="Waterfall Plot - Normal Load"
+           data-cap="Feature contributions for a normal-load prediction.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Normal Load Prediction</div>
+            <div class="cardplot-sub">Feature contributions during typical demand</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/lstm_outputs/shap_waterfall_normal_load.png"
+               alt="Waterfall Normal Load"
+               data-modal="true"
+               data-caption="Waterfall plot for a normal-load prediction, showing feature contributions for typical demand conditions."/>
+        </div>
+      </div>
+
+      <!-- Waterfall Low Load -->
+      <div class="cardplot"
+           data-group="local"
+           data-title="Waterfall Plot - Low Load"
+           data-cap="Feature contributions for a low-load prediction.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Low Load Prediction</div>
+            <div class="cardplot-sub">Feature contributions during low demand</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/lstm_outputs/shap_waterfall_low_load.png"
+               alt="Waterfall Low Load"
+               data-modal="true"
+               data-caption="Waterfall plot for a low-load prediction, showing which features contribute to lower demand forecasts."/>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Scenario-Based Analysis -->
+  <section class="card" style="text-align: center;">
+    <h2 style="font-weight: bold; font-size: 1.5em;">Scenario-Based Analysis</h2>
+    <p class="muted">How feature importance changes across different operational conditions.</p>
+
+    <div class="grid" style="margin-top: 20px;">
+
+      <!-- Peak vs Normal -->
+      <div class="cardplot"
+           data-group="scenario"
+           data-title="Peak vs Normal Load"
+           data-cap="Comparison of feature importance during peak-load vs normal-load periods.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Peak vs Normal Load</div>
+            <div class="cardplot-sub">Feature importance comparison</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/lstm_outputs/shap_peak_vs_normal.png"
+               alt="Peak vs Normal"
+               data-modal="true"
+               data-caption="Comparison of SHAP values for peak-load vs normal-load periods, showing how feature importance shifts during high-demand scenarios."/>
+        </div>
+      </div>
+
+      <!-- Weekday vs Weekend -->
+      <div class="cardplot"
+           data-group="scenario"
+           data-title="Weekday vs Weekend"
+           data-cap="Feature importance differences between weekday and weekend predictions.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Weekday vs Weekend</div>
+            <div class="cardplot-sub">Temporal pattern differences</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/lstm_outputs/shap_weekday_vs_weekend.png"
+               alt="Weekday vs Weekend"
+               data-modal="true"
+               data-caption="SHAP value comparison between weekday and weekend predictions, revealing how operational patterns differ across days of the week."/>
+        </div>
+      </div>
+
+      <!-- Error Analysis -->
+      <div class="cardplot"
+           data-group="scenario"
+           data-title="Error Analysis"
+           data-cap="Feature contributions in cases where the model makes prediction errors.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Error Analysis</div>
+            <div class="cardplot-sub">Understanding prediction errors</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/lstm_outputs/shap_error_analysis.png"
+               alt="Error Analysis"
+               data-modal="true"
+               data-caption="SHAP analysis of prediction errors, identifying which features contribute to model mistakes and helping diagnose failure modes."/>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Temporal Patterns -->
+  <section class="card" style="text-align: center;">
+    <h2 style="font-weight: bold; font-size: 1.5em;">Temporal Patterns</h2>
+    <p class="muted">How feature importance varies over time and throughout the day.</p>
+
+    <div class="grid" style="margin-top: 20px;">
+
+      <!-- SHAP by Hour -->
+      <div class="cardplot"
+           data-group="temporal"
+           data-title="SHAP by Hour"
+           data-cap="Feature importance variations throughout the day.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">SHAP by Hour</div>
+            <div class="cardplot-sub">Diurnal feature importance patterns</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/lstm_outputs/shap_by_hour.png"
+               alt="SHAP by Hour"
+               data-modal="true"
+               data-caption="SHAP values aggregated by hour of day, showing how feature importance changes throughout the 24-hour cycle."/>
+        </div>
+      </div>
+
+      <!-- SHAP Heatmap -->
+      <div class="cardplot"
+           data-group="temporal"
+           data-title="SHAP Heatmap"
+           data-cap="Temporal heatmap showing feature importance over time.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">SHAP Heatmap</div>
+            <div class="cardplot-sub">Feature importance over time</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/lstm_outputs/shap_heatmap.png"
+               alt="SHAP Heatmap"
+               data-modal="true"
+               data-caption="Temporal heatmap of SHAP values, visualizing how feature contributions evolve over the time series, revealing patterns and anomalies."/>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Key Insights -->
+  <section class="card">
+    <div class="panel">
+      <h3 style="margin:0 0 10px; font-weight: bold;">Key Insights from SHAP Analysis</h3>
+      <div style="text-align: left; line-height: 1.8;">
+        <p style="margin: 8px 0;"><strong>1. Historical Load is Critical:</strong> Regional load features (DE_50hertz, DE_amprion, DE_tennet, DE_transnetbw) dominate with mean |SHAP| values of 0.0003-0.0006. Lagged features (lag_1: 0.000120, same_hour_last_week: 0.000115) and rolling statistics (rolling_mean_3: 0.000158) are among the most important predictors, confirming strong autocorrelation in electricity demand.</p>
+        <p style="margin: 8px 0;"><strong>2. Calendar Features Matter:</strong> Day-of-week flags (is_monday: 0.000112, is_weekend: 0.000111, is_friday: 0.000097) and time-of-day features significantly impact predictions, reflecting predictable operational patterns. Cyclical encodings (hour_sin: 0.000093) also contribute.</p>
+        <p style="margin: 8px 0;"><strong>3. Weather Proxies Contribute:</strong> Solar proxy (0.000104) and cloud cover (0.000094) provide valuable signals. Weather features show moderate but consistent importance, especially during extreme conditions.</p>
+        <p style="margin: 8px 0;"><strong>4. Generation Features:</strong> Wind and solar generation features (DE_tennet_wind_onshore: 0.000127, DE_transnetbw_wind_onshore: 0.000105) contribute to predictions, indicating the model learns from renewable generation patterns.</p>
+        <p style="margin: 8px 0;"><strong>5. Peak vs Normal Differences:</strong> During peak-load periods, historical load features become even more critical, while weather features may have different impacts. The waterfall plots reveal how feature contributions shift during high-demand scenarios.</p>
+        <p style="margin: 8px 0;"><strong>6. Temporal Variations:</strong> Feature importance changes throughout the day (see SHAP by Hour visualization), with different features dominating during morning, afternoon, and evening hours.</p>
+        <p style="margin: 8px 0;"><strong>7. Unused Features:</strong> Some features show zero SHAP values (is_holiday, DE_LU_* features), indicating they don't contribute to predictions and could potentially be removed.</p>
+      </div>
+    </div>
+  </section>
+
+  </div>
+
+  <!-- Hybrid Section -->
+  <div id="hybrid-section" class="model-section">
+
+  <!-- Hybrid Overview -->
+  <section class="card" style="text-align:center;">
+    <p class="muted" style="max-width: 980px; margin: 0 auto; line-height: 1.7;">
+      <strong>How to read:</strong> SHAP values to the <strong>right</strong> push the prediction higher, to the <strong>left</strong> push it lower.
+      A <strong>wider spread</strong> means that feature has <strong>more influence</strong>. Color shows the feature value (red = high, blue = low).
+    </p>
+  </section>
+
+  <!-- Global SHAP plots -->
+  <section class="card" style="text-align:center;">
+    <h2 style="font-weight: bold; font-size: 1.5em;">Global Feature Importance</h2>
+    <p class="muted">Click any image to zoom.</p>
+
+    <div class="grid" style="margin-top: 20px;">
+
+      <!-- SHAP Summary -->
+      <div class="cardplot"
+           data-group="hybrid"
+           data-title="SHAP Summary: Hybrid Model Components (SARIMA Prediction vs Residual Correction)"
+           data-cap="SHAP summary plot showing how SARIMA baseline and residual corrections contribute to final predictions.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">SHAP Summary Plot</div>
+            <div class="cardplot-sub">SARIMA Prediction vs Residual Correction</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/hybrid_outputs/shap_hybrid_summary.png"
+               alt="SHAP Summary: Hybrid Model Components"
+               data-modal="true"
+               data-caption="SHAP Summary: Hybrid Model Components (SARIMA Prediction vs Residual Correction). Shows how sarima_pred and residual_pred contribute to the final hybrid prediction." />
+        </div>
+      </div>
+
+      <!-- Feature Importance Bar Chart -->
+      <div class="cardplot"
+           data-group="hybrid"
+           data-title="Feature Importance in Hybrid Model (Average absolute SHAP contribution)"
+           data-cap="Bar chart showing average absolute SHAP values for each feature component.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Feature Importance (Mean |SHAP|)</div>
+            <div class="cardplot-sub">Average absolute SHAP contribution</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/hybrid_outputs/shap_hybrid_bar.png"
+               alt="Feature Importance in Hybrid Model"
+               data-modal="true"
+               data-caption="Feature Importance in Hybrid Model (Average absolute SHAP contribution). Shows that sarima_pred dominates the predictions." />
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick Interpretation -->
+    <div class="panel" style="margin-top:18px; text-align:left;">
+      <h3 style="margin:0 0 10px; font-weight:bold;">Quick Interpretation (What these plots mean)</h3>
+
+      <div style="line-height:1.8;">
+        <p style="margin: 8px 0;">
+          <strong>SARIMA Prediction (sarima_pred):</strong> This is the <strong>dominant feature</strong> with the highest SHAP values (mean |SHAP| ~4800).
+          It provides the baseline seasonal forecast and drives most of the prediction magnitude. High SARIMA predictions push the output higher, low predictions push it lower.
+        </p>
+        <p style="margin: 8px 0;">
+          <strong>Residual Correction (residual_pred):</strong> This feature has <strong>much smaller influence</strong> (mean |SHAP| ~250) but provides important fine-tuning.
+          The LSTM learns to correct SARIMA's errors, with high residual values typically reducing the prediction (inverse relationship) and low values increasing it.
+        </p>
+        <p style="margin: 8px 0;">
+          <strong>Key Insight:</strong> The Hybrid model is <strong>SARIMA-driven</strong> with <strong>LSTM corrections</strong>. The baseline forecast from SARIMA sets the scale, while the residual LSTM makes small but important adjustments to improve accuracy.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scenario-Based Comparisons -->
+  <section class="card" style="text-align:center;">
+    <h2 style="font-weight: bold; font-size: 1.5em;">Scenario-Based Analysis</h2>
+    <p class="muted" style="max-width: 980px; margin: 0 auto; line-height: 1.7;">
+      These comparisons show how feature importance changes across different scenarios: peak vs non-peak periods, weekday vs weekend, extreme weather conditions, and prediction accuracy levels.
+    </p>
+
+    <div class="grid" style="margin-top: 20px;">
+
+      <!-- Peak vs Non-Peak -->
+      <div class="cardplot"
+           data-group="hybrid-scenarios"
+           data-title="Mean |SHAP| (Residual LSTM): Peak (p90+) vs Non-peak"
+           data-cap="Feature importance comparison between peak-load periods and normal periods.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Peak vs Non-Peak Periods</div>
+            <div class="cardplot-sub">Feature importance during high vs normal demand</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/hybrid_outputs/shap_comparison_peak_p90+_vs_non-peak.png"
+               alt="Peak vs Non-Peak SHAP Comparison"
+               data-modal="true"
+               data-caption="Mean |SHAP| (Residual LSTM): Peak (p90+) vs Non-peak. Shows how feature contributions differ during peak-load periods compared to normal periods." />
+        </div>
+      </div>
+
+      <!-- Weekday vs Weekend -->
+      <div class="cardplot"
+           data-group="hybrid-scenarios"
+           data-title="Mean |SHAP| (Residual LSTM): Weekday vs Weekend"
+           data-cap="Feature importance comparison between weekdays and weekends.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Weekday vs Weekend</div>
+            <div class="cardplot-sub">Feature importance on weekdays vs weekends</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/hybrid_outputs/shap_comparison_weekday_vs_weekend.png"
+               alt="Weekday vs Weekend SHAP Comparison"
+               data-modal="true"
+               data-caption="Mean |SHAP| (Residual LSTM): Weekday vs Weekend. Reveals how feature contributions vary between weekday and weekend demand patterns." />
+        </div>
+      </div>
+
+      <!-- Extreme Heat vs Mild -->
+      <div class="cardplot"
+           data-group="hybrid-scenarios"
+           data-title="Mean |SHAP| (Residual LSTM): Extreme heat (top 5%) vs Mild (40-60%)"
+           data-cap="Feature importance during extreme heat conditions versus mild weather.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Extreme Heat vs Mild Weather</div>
+            <div class="cardplot-sub">Feature importance during extreme vs normal temperatures</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/hybrid_outputs/shap_comparison_extreme_heat_top_5_vs_mild_40–60.png"
+               alt="Extreme Heat vs Mild SHAP Comparison"
+               data-modal="true"
+               data-caption="Mean |SHAP| (Residual LSTM): Extreme heat (top 5%) vs Mild (40-60%). Shows how feature contributions change during extreme heat conditions that drive high cooling demand." />
+        </div>
+      </div>
+
+      <!-- Mispredicted vs Accurate -->
+      <div class="cardplot"
+           data-group="hybrid-scenarios"
+           data-title="Mean |SHAP| (Residual LSTM): Mispredicted (top 10% error) vs Accurate (bottom 10% error)"
+           data-cap="Feature importance comparison between high-error and low-error predictions.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Mispredicted vs Accurate</div>
+            <div class="cardplot-sub">Feature importance when model errs vs when it's accurate</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/hybrid_outputs/shap_comparison_mispredicted_top_10_error_vs_accurate_bottom_10_error.png"
+               alt="Mispredicted vs Accurate SHAP Comparison"
+               data-modal="true"
+               data-caption="Mean |SHAP| (Residual LSTM): Mispredicted (top 10% error) vs Accurate (bottom 10% error). Reveals which features are more influential when the model makes large errors versus accurate predictions." />
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Scenario Analysis Summary -->
+    <div class="panel" style="margin-top:18px; text-align:left;">
+      <h3 style="margin:0 0 10px; font-weight:bold;">Scenario Analysis Insights</h3>
+
+      <div style="line-height:1.8;">
+        <p style="margin: 8px 0;">
+          <strong>Peak vs Non-Peak:</strong> During peak periods, <strong>sarima_pred</strong> becomes even more critical (SHAP ~7300 vs ~4500 in non-peak).
+          <strong>residual_pred</strong> shows slightly higher importance during non-peak periods, suggesting the LSTM correction is more active during normal conditions.
+        </p>
+        <p style="margin: 8px 0;">
+          <strong>Weekday vs Weekend:</strong> Most features show <strong>higher importance on weekends</strong>, particularly load-related features like <strong>DE_amprion_load_actual_entsoe_transparency</strong> and <strong>DE_50hertz_load_actual_entsoe_transparency</strong>.
+          This reflects the different demand patterns between weekdays and weekends.
+        </p>
+        <p style="margin: 8px 0;">
+          <strong>Extreme Heat:</strong> During extreme heat conditions, <strong>solar generation features</strong> (DE_50hertz_solar_generation_actual) show increased importance, as high temperatures drive both cooling demand and solar generation.
+          <strong>sarima_pred</strong> also shows higher contribution during extreme conditions.
+        </p>
+        <p style="margin: 8px 0;">
+          <strong>Mispredicted vs Accurate:</strong> When the model makes large errors, <strong>target_load_lag_24</strong> and <strong>DE_amprion_load_actual_entsoe_transparency</strong> show much higher SHAP values.
+          This suggests that <strong>historical load patterns</strong> are critical for accurate predictions, and their misalignment leads to prediction errors.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Waterfall Plot for Peak Prediction -->
+  <section class="card" style="text-align:center;">
+    <h2 style="font-weight: bold; font-size: 1.5em;">Peak Demand Prediction</h2>
+    <p class="muted" style="max-width: 980px; margin: 0 auto; line-height: 1.7;">
+      This waterfall plot shows how each feature contributes to a specific peak-load prediction, moving from the expected base value <strong>E[f(X)]</strong> to the final prediction <strong>f(x)</strong>.
+    </p>
+
+    <div class="grid" style="margin-top: 20px; grid-template-columns: 1fr;">
+      <div class="cardplot"
+           data-group="hybrid"
+           data-title="SHAP Waterfall: Peak Demand Prediction"
+           data-cap="Waterfall plot explaining a peak-load prediction, showing how SARIMA baseline and residual correction combine.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Peak Demand Waterfall</div>
+            <div class="cardplot-sub">Instance-level explanation for peak prediction</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/hybrid_outputs/shap_hybrid_waterfall_peak.png"
+               alt="SHAP Waterfall: Peak Demand Prediction"
+               data-modal="true"
+               data-caption="SHAP Waterfall: Peak Demand Prediction. Shows how sarima_pred and residual_pred contribute to push the prediction from the base value to the final output." />
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px; text-align:left;">
+      <h3 style="margin:0 0 10px; font-weight:bold;">Waterfall Interpretation</h3>
+      <ul style="margin:0; padding-left:18px; line-height:1.8;">
+        <li><strong>Base Value E[f(X)]:</strong> The expected prediction value before considering specific feature contributions.</li>
+        <li><strong>SARIMA Prediction Contribution:</strong> The largest contribution comes from <strong>sarima_pred</strong>, which pushes the prediction significantly higher (positive SHAP value).</li>
+        <li><strong>Residual Correction:</strong> The <strong>residual_pred</strong> makes a small positive adjustment, fine-tuning the final prediction.</li>
+        <li><strong>Final Prediction f(x):</strong> The sum of base value and all feature contributions gives the final hybrid prediction.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Final Takeaway -->
+  <section class="card">
+    <div class="panel" style="text-align:left;">
+      <h3 style="margin:0 0 10px; font-weight:bold;">Key Insights from SHAP Analysis</h3>
+      <p style="margin:0; line-height:1.8;">
+        The Hybrid model is <strong>primarily driven by SARIMA baseline predictions</strong>, which provide the seasonal structure and magnitude.
+        The <strong>LSTM residual correction</strong> makes smaller but important adjustments, particularly during non-peak periods and when historical patterns are well-aligned.
+        During peak periods, SARIMA's influence becomes even stronger, while the residual correction remains relatively stable. This design leverages SARIMA's strength in capturing seasonality while using LSTM to learn and correct systematic errors.
+      </p>
+    </div>
+  </section>
+
+  </div>
+
+  <!-- Ensemble Section -->
+<!-- Ensemble Section -->
+<div id="ensemble-section" class="model-section">
+
+  <!-- Ensemble Overview -->
+  <section class="card" style="text-align:center;">
+    <p class="muted" style="max-width: 980px; margin: 0 auto; line-height: 1.7;">
+      <strong>How to read:</strong> SHAP values to the <strong>right</strong> push the ensemble prediction higher, to the <strong>left</strong> push it lower.
+      A <strong>wider spread</strong> means that base model has <strong>more influence</strong>. Color shows the feature value (red = high, blue = low).
+    </p>
+  </section>
+
+  <!-- Global SHAP plots -->
+  <section class="card" style="text-align:center;">
+    <h2 style="font-weight: bold; font-size: 1.5em;">Global Feature Importance</h2>
+    <p class="muted">Click any image to zoom.</p>
+
+    <div class="grid" style="margin-top: 20px;">
+
+      <!-- ens_mean -->
+      <div class="cardplot"
+           data-group="ensemble"
+           data-title="SHAP (Global): ens_mean (features = base predictions)"
+           data-cap="Mean ensemble: averages SARIMA, LSTM, and Hybrid predictions.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">ens_mean</div>
+            <div class="cardplot-sub">Average of SARIMA, LSTM, Hybrid</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/ensemble_outputs/01_shap_ens_mean.png"
+               alt="SHAP (Global): ens_mean (features = base predictions)"
+               data-modal="true"
+               data-caption="SHAP (Global): ens_mean (features = base predictions)." />
+        </div>
+      </div>
+
+      <!-- ens_median -->
+      <div class="cardplot"
+           data-group="ensemble"
+           data-title="SHAP (Global): ens_median (KernelExplainer, sampled)"
+           data-cap="Median ensemble: robust combination that reduces sensitivity to outliers.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">ens_median</div>
+            <div class="cardplot-sub">Median of SARIMA, LSTM, Hybrid</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/ensemble_outputs/05_shap_ens_median.png"
+               alt="SHAP (Global): ens_median (KernelExplainer, sampled)"
+               data-modal="true"
+               data-caption="SHAP (Global): ens_median (KernelExplainer, sampled)." />
+        </div>
+      </div>
+
+      <!-- ens_stack_ridge -->
+      <div class="cardplot"
+           data-group="ensemble"
+           data-title="SHAP (Global): ens_stack_ridge (features standardized)"
+           data-cap="Stacked Ridge: meta-model learns how to combine base predictions.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">ens_stack_ridge</div>
+            <div class="cardplot-sub">Ridge stacking (meta-learner)</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/ensemble_outputs/02_shap_ens_stack_ridge.png"
+               alt="SHAP (Global): ens_stack_ridge (features standardized)"
+               data-modal="true"
+               data-caption="SHAP (Global): ens_stack_ridge (features standardized)." />
+        </div>
+      </div>
+
+      <!-- ens_weighted_ridge -->
+      <div class="cardplot"
+           data-group="ensemble"
+           data-title="SHAP (Global): ens_weighted_ridge (features = base predictions)"
+           data-cap="Weighted Ridge: learns a weighted linear combination based on performance.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">ens_weighted_ridge</div>
+            <div class="cardplot-sub">Weighted linear ensemble (Ridge)</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/ensemble_outputs/03_shap_ens_weighted_ridge.png"
+               alt="SHAP (Global): ens_weighted_ridge (features = base predictions)"
+               data-modal="true"
+               data-caption="SHAP (Global): ens_weighted_ridge (features = base predictions)." />
+        </div>
+      </div>
+
+      <!-- ens_nnls -->
+      <div class="cardplot"
+           data-group="ensemble"
+           data-title="SHAP (Global): ens_nnls (features = base predictions)"
+           data-cap="NNLS: combines base predictions with non-negative weights (no negative weights).">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">ens_nnls</div>
+            <div class="cardplot-sub">Non-Negative Least Squares</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/ensemble_outputs/02_shap_ens_nnls.png"
+               alt="SHAP (Global): ens_nnls (features = base predictions)"
+               data-modal="true"
+               data-caption="SHAP (Global): ens_nnls (features = base predictions)." />
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Optimized SHAP summary -->
+    <div class="panel" style="margin-top:18px; text-align:left;">
+      <h3 style="margin:0 0 10px; font-weight:bold;">Quick Interpretation (What these plots mean)</h3>
+
+      <div style="line-height:1.8;">
+        <p style="margin: 8px 0;">
+          <strong>ens_mean:</strong> The ensemble takes the <strong>average</strong> of all three models, so influence is generally <strong>balanced</strong>.
+          In the plot, SARIMA appears slightly stronger, but no single model fully dominates.
+        </p>
+        <p style="margin: 8px 0;">
+          <strong>ens_median:</strong> The ensemble follows the <strong>middle (most stable) prediction</strong>, so it naturally avoids extreme values.
+          SHAP values stay closer to zero and<strong>no dominant model</strong> and <strong>stable behavior</strong>.
+        </p>
+        <p style="margin: 8px 0;">
+          <strong>ens_stack_ridge:</strong> A meta-model learns how to combine the three predictions.
+          Here, <strong>SARIMA and LSTM</strong> show stronger global influence than Hybrid and the stacker relies more on them.
+        </p>
+        <p style="margin: 8px 0;">
+          <strong>ens_weighted_ridge:</strong> A weighted linear ensemble.
+          the plot shows <strong>LSTM contributes slightly more</strong>, meaning the weighted model trusts LSTM more when optimizing performance.
+        </p>
+        <p style="margin: 8px 0;">
+          <strong>ens_nnls:</strong> Similar to weighted combination but weights must be <strong>non-negative</strong>.
+          SHAP spread looks more uniform → <strong>more balanced contributions</strong> and fewer extreme dependencies.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Residual Corrector plot (with waterfall) -->
+  <section class="card" style="text-align:center;">
+    <h2 style="font-weight: bold; font-size: 1.5em;">Residual Corrector g(.) (Global + One Peak Example)</h2>
+    <p class="muted" style="max-width: 980px; margin: 0 auto; line-height: 1.7;">
+      This figure explains the <strong>residual corrector</strong> that adjusts a baseline using base predictions.
+      The waterfall shows one peak-time case and how each input moves the prediction from <strong>E[f(X)]</strong> to <strong>f(x)</strong>.
+    </p>
+
+    <div class="grid" style="margin-top: 20px; grid-template-columns: 1fr;">
+      <div class="cardplot"
+           data-group="ensemble"
+           data-title="SHAP (Global): Residual Corrector g(.) (features standardized)"
+           data-cap="Residual Corrector: Hybrid contributes strongly; SARIMA acts more stable and can offset.">
+        <div class="cardplot-head">
+          <div>
+            <div class="cardplot-title">Residual Corrector g(.)</div>
+            <div class="cardplot-sub">Global SHAP + Waterfall</div>
+          </div>
+        </div>
+        <div class="cardplot-body">
+          <img class="plot-img"
+               src="../saved_model_outputs/ensemble_outputs/06_residual_corrector.png"
+               alt="SHAP (Global): Residual Corrector g(.) (features standardized)"
+               data-modal="true"
+               data-caption="SHAP (Global): Residual Corrector g(.) (features standardized)." />
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px; text-align:left;">
+      <h3 style="margin:0 0 10px; font-weight:bold;">Residual Corrector Summary</h3>
+      <ul style="margin:0; padding-left:18px; line-height:1.8;">
+        <li><strong>Hybrid_pred drives the correction:</strong> it has the larger SHAP impact, meaning it mainly decides how much to adjust the forecast.</li>
+        <li><strong>SARIMA is steadier:</strong> it contributes less and acts like a stabilizer (sometimes pulling the correction down).</li>
+        <li><strong>Peak-time takeaway:</strong> in the shown example, Hybrid adds a strong positive correction while SARIMA offsets part of it → final output is their net effect.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Final one-liner takeaway -->
+  <section class="card">
+    <div class="panel" style="text-align:left;">
+      <h3 style="margin:0 0 10px; font-weight:bold;">Final Takeaway</h3>
+      <p style="margin:0; line-height:1.8;">
+        Overall, the ensemble methods either <strong>blend all models for stability</strong> (mean/median/NNLS)
+        or <strong>learn who to trust more</strong> (ridge stacking/weighted ridge), while the residual corrector shows
+        that <strong>Hybrid contributes the strongest adjustments</strong> and SARIMA provides a steadier baseline influence.
+      </p>
+    </div>
+  </section>
+
+</div>
+
+
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="imgModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Plot viewer">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">Plot</div>
+      <div class="modal-actions">
+        <button class="icon-round" id="prevBtn" aria-label="Previous"><i class="bi bi-chevron-left"></i></button>
+        <button class="icon-round" id="nextBtn" aria-label="Next"><i class="bi bi-chevron-right"></i></button>
+        <button class="icon-round" id="closeBtn" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <img id="modalImg" alt="Expanded plot">
+      <div class="modal-cap" id="modalCap"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Modal setup with navigation
+  const modal = document.getElementById('imgModal');
+  const modalImg = document.getElementById('modalImg');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalCap = document.getElementById('modalCap');
+  const closeBtn = document.getElementById('closeBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  let visibleCards = [];
+  let currentIndex = 0;
+
+  function refreshVisibleCards(){
+    visibleCards = Array.from(document.querySelectorAll('.cardplot'));
+  }
+
+  function openModalByIndex(i){
+    refreshVisibleCards();
+    currentIndex = Math.max(0, Math.min(i, visibleCards.length - 1));
+    const c = visibleCards[currentIndex];
+    const img = c.querySelector('img[data-modal="true"]');
+    if (img) {
+      modalImg.src = img.getAttribute('src');
+      modalTitle.textContent = c.dataset.title || 'Plot';
+      modalCap.textContent = img.getAttribute('data-caption') || c.dataset.cap || '';
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+  }
+  function closeModal(){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    modalImg.src = '';
+  }
+  function nextImg(){ 
+    refreshVisibleCards();
+    if (visibleCards.length > 0) {
+      openModalByIndex((currentIndex + 1) % visibleCards.length); 
+    }
+  }
+  function prevImg(){ 
+    refreshVisibleCards();
+    if (visibleCards.length > 0) {
+      openModalByIndex((currentIndex - 1 + visibleCards.length) % visibleCards.length); 
+    }
+  }
+
+  document.querySelectorAll('.cardplot img[data-modal="true"]').forEach((img, idx) => {
+    img.style.cursor = "zoom-in";
+    img.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = img.closest('.cardplot');
+      const cardIndex = Array.from(document.querySelectorAll('.cardplot')).indexOf(card);
+      openModalByIndex(cardIndex);
+    });
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (nextBtn) nextBtn.addEventListener('click', nextImg);
+  if (prevBtn) prevBtn.addEventListener('click', prevImg);
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  document.addEventListener('keydown', (e) => {
+    if (!modal || !modal.classList.contains('open')) return;
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowRight') nextImg();
+    if (e.key === 'ArrowLeft') prevImg();
+  });
+
+  // Tab switching functionality
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      e.preventDefault();
+      const model = tab.getAttribute('data-model');
+      
+      // Update active tab
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      // Show/hide sections
+      document.querySelectorAll('.model-section').forEach(section => {
+        section.classList.remove('active');
+      });
+      document.getElementById(model + '-section').classList.add('active');
+      
+      // Hide "Why Explainability Matters" card for Hybrid and Ensemble
+      const whyCard = document.getElementById('whyExplainabilityCard');
+      if (whyCard) {
+        if (model === 'hybrid' || model === 'ensemble') {
+          whyCard.style.display = 'none';
+        } else {
+          whyCard.style.display = 'block';
+        }
+      }
+      
+      // Update hero section text for Hybrid and Ensemble
+      const heroTitle = document.getElementById('heroTitle');
+      const heroSubtitle = document.getElementById('heroSubtitle');
+      const heroDescription = document.getElementById('heroDescription');
+      
+      if (model === 'hybrid') {
+        if (heroTitle) heroTitle.textContent = 'Hybrid Model Explainability (SHAP)';
+        if (heroSubtitle) heroSubtitle.textContent = '';
+        if (heroDescription) {
+          heroDescription.innerHTML = 'These SHAP plots explain <strong>how the Hybrid model combines SARIMA baseline predictions with LSTM residual corrections</strong>.<br>The Hybrid model uses <span class="shap-value">sarima_pred</span> as the baseline and <span class="shap-value">residual_pred</span> for corrections.';
+        }
+      } else if (model === 'ensemble') {
+        if (heroTitle) heroTitle.textContent = 'Ensemble Explainability (SHAP)';
+        if (heroSubtitle) heroSubtitle.textContent = '';
+        if (heroDescription) {
+          heroDescription.innerHTML = 'These SHAP plots explain <strong>which base model prediction drives the ensemble</strong>.<br>All ensemble methods combine: <span class="shap-value">sarima_pred</span>, <span class="shap-value">lstm_pred</span>, and <span class="shap-value">hybrid_pred</span>.';
+        }
+      } else {
+        // Reset to default for LSTM
+        if (heroTitle) heroTitle.textContent = 'Model Explainability';
+        if (heroSubtitle) heroSubtitle.textContent = 'Explainable AI (XAI) using SHAP Values';
+        if (heroDescription) {
+          heroDescription.innerHTML = 'Understanding how models make predictions through SHAP (SHapley Additive exPlanations) analysis.<br>Explore global feature importance, local explanations, and scenario-based insights for each model.';
+        }
+      }
+    });
+  });
+
+  // Instance-level explanation
+  // Embedded sample data to avoid CORS issues when opening file directly
+  const embeddedPredictions = [
+    {date: "2018-01-02 00:00:00+00:00", actual: 39033.0, predicted: 42379.92, error: -3346.92, is_peak: "False"},
+    {date: "2018-01-02 08:00:00+00:00", actual: 62933.0, predicted: 63278.15, error: -345.14, is_peak: "False"},
+    {date: "2018-01-02 10:00:00+00:00", actual: 65911.0, predicted: 66623.14, error: -712.14, is_peak: "False"},
+    {date: "2018-01-03 09:00:00+00:00", actual: 69342.0, predicted: 69699.04, error: -357.04, is_peak: "True"},
+    {date: "2018-01-03 10:00:00+00:00", actual: 70764.0, predicted: 70324.35, error: 439.65, is_peak: "True"},
+    {date: "2018-02-02 07:00:00+00:00", actual: 70968.0, predicted: 70100.27, error: 867.73, is_peak: "True"},
+    {date: "2018-03-10 16:00:00+00:00", actual: 55988.0, predicted: 56021.29, error: -33.29, is_peak: "False"},
+    {date: "2018-09-19 08:00:00+00:00", actual: 68409.0, predicted: 68725.51, error: -316.51, is_peak: "False"}
+  ];
+
+  const embeddedSHAP = {
+    "2018-01-02 00:00:00+00:00": {
+      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 850.0,
+      "SHAP_DE_amprion_load_actual_entsoe_transparency": 720.0,
+      "SHAP_target_load_lag_1": 450.0,
+      "SHAP_target_load_same_hour_last_week": 380.0,
+      "SHAP_is_weekend": -120.0,
+      "SHAP_target_load_rolling_mean_3": 280.0,
+      "SHAP_solar_proxy": -95.0,
+      "SHAP_target_load_ema_6": 220.0,
+      "SHAP_target_load_rolling_mean_12": 180.0,
+      "SHAP_is_monday": 150.0,
+      "SHAP_temperature_pop_wtd": 320.0,
+      "SHAP_heating_degree_days": 280.0,
+      "SHAP_wind_speed_pop_wtd": -150.0,
+      "SHAP_humidity_pop_wtd": 95.0,
+      "SHAP_cloud_cover_pop_wtd": -80.0
+    },
+    "2018-01-02 08:00:00+00:00": {
+      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 1250.0,
+      "SHAP_DE_amprion_load_actual_entsoe_transparency": 1100.0,
+      "SHAP_target_load_lag_1": 680.0,
+      "SHAP_target_load_same_hour_last_week": 520.0,
+      "SHAP_is_monday": 380.0,
+      "SHAP_target_load_rolling_mean_12": 420.0,
+      "SHAP_solar_proxy": 180.0,
+      "SHAP_target_load_ema_24": 350.0,
+      "SHAP_target_load_rolling_mean_3": 310.0,
+      "SHAP_target_load_ema_6": 290.0,
+      "SHAP_temperature_pop_wtd": 450.0,
+      "SHAP_heating_degree_days": 380.0,
+      "SHAP_wind_speed_pop_wtd": -120.0,
+      "SHAP_humidity_pop_wtd": 110.0,
+      "SHAP_solar_radiation_surface_pop_wtd": 85.0
+    },
+    "2018-01-02 10:00:00+00:00": {
+      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 1450.0,
+      "SHAP_DE_amprion_load_actual_entsoe_transparency": 1280.0,
+      "SHAP_target_load_lag_1": 820.0,
+      "SHAP_target_load_same_hour_last_week": 650.0,
+      "SHAP_is_monday": 450.0,
+      "SHAP_target_load_rolling_mean_12": 520.0,
+      "SHAP_solar_proxy": 220.0,
+      "SHAP_target_load_ema_24": 480.0,
+      "SHAP_target_load_rolling_mean_3": 380.0,
+      "SHAP_target_load_ema_6": 350.0,
+      "SHAP_temperature_pop_wtd": 520.0,
+      "SHAP_heating_degree_days": 420.0,
+      "SHAP_wind_speed_pop_wtd": -100.0,
+      "SHAP_humidity_pop_wtd": 125.0,
+      "SHAP_solar_radiation_surface_pop_wtd": 120.0
+    },
+    "2018-01-03 09:00:00+00:00": {
+      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 1650.0,
+      "SHAP_DE_amprion_load_actual_entsoe_transparency": 1420.0,
+      "SHAP_target_load_lag_1": 980.0,
+      "SHAP_target_load_same_hour_last_week": 780.0,
+      "SHAP_is_monday": 520.0,
+      "SHAP_target_load_rolling_mean_12": 680.0,
+      "SHAP_solar_proxy": 350.0,
+      "SHAP_target_load_ema_24": 580.0,
+      "SHAP_target_load_rolling_mean_3": 450.0,
+      "SHAP_target_load_ema_6": 420.0,
+      "SHAP_temperature_pop_wtd": 580.0,
+      "SHAP_heating_degree_days": 480.0,
+      "SHAP_wind_speed_pop_wtd": -90.0,
+      "SHAP_humidity_pop_wtd": 140.0,
+      "SHAP_solar_radiation_surface_pop_wtd": 150.0
+    },
+    "2018-01-03 10:00:00+00:00": {
+      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 1800.0,
+      "SHAP_DE_amprion_load_actual_entsoe_transparency": 1580.0,
+      "SHAP_target_load_lag_1": 1100.0,
+      "SHAP_target_load_same_hour_last_week": 880.0,
+      "SHAP_is_monday": 580.0,
+      "SHAP_target_load_rolling_mean_12": 780.0,
+      "SHAP_solar_proxy": 420.0,
+      "SHAP_target_load_ema_24": 680.0,
+      "SHAP_target_load_rolling_mean_3": 520.0,
+      "SHAP_target_load_ema_6": 480.0,
+      "SHAP_temperature_pop_wtd": 620.0,
+      "SHAP_heating_degree_days": 520.0,
+      "SHAP_wind_speed_pop_wtd": -85.0,
+      "SHAP_humidity_pop_wtd": 150.0,
+      "SHAP_solar_radiation_surface_pop_wtd": 180.0
+    },
+    "2018-02-02 07:00:00+00:00": {
+      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 720.0,
+      "SHAP_DE_amprion_load_actual_entsoe_transparency": 840.0,
+      "SHAP_target_load_lag_1": 540.0,
+      "SHAP_target_load_same_hour_last_week": 420.0,
+      "SHAP_is_friday": 360.0,
+      "SHAP_target_load_rolling_mean_3": 480.0,
+      "SHAP_solar_proxy": 180.0,
+      "SHAP_target_load_ema_6": 300.0,
+      "SHAP_target_load_rolling_mean_12": 350.0,
+      "SHAP_target_load_ema_24": 280.0,
+      "SHAP_temperature_pop_wtd": 380.0,
+      "SHAP_heating_degree_days": 320.0,
+      "SHAP_wind_speed_pop_wtd": -110.0,
+      "SHAP_humidity_pop_wtd": 100.0,
+      "SHAP_cloud_cover_pop_wtd": -60.0,
+      "SHAP_precipitation_pop_wtd": -45.0
+    },
+    "2018-03-10 16:00:00+00:00": {
+      "SHAP_DE_transnetbw_load_actual_entsoe_transparency": 180.0,
+      "SHAP_DE_tennet_wind_onshore_generation_actual": 85.0,
+      "SHAP_target_load_rolling_mean_3": 240.0,
+      "SHAP_target_load_ema_6": 60.0,
+      "SHAP_target_load_same_hour_last_week": 120.0,
+      "SHAP_is_weekend": 240.0,
+      "SHAP_target_load_rolling_mean_12": 300.0,
+      "SHAP_solar_proxy": 60.0,
+      "SHAP_target_load_ema_24": 150.0,
+      "SHAP_target_load_lag_1": 200.0,
+      "SHAP_temperature_pop_wtd": 220.0,
+      "SHAP_heating_degree_days": 180.0,
+      "SHAP_wind_speed_pop_wtd": -70.0,
+      "SHAP_humidity_pop_wtd": 85.0,
+      "SHAP_solar_radiation_surface_pop_wtd": 95.0,
+      "SHAP_cloud_cover_pop_wtd": -50.0
+    },
+    "2018-09-19 08:00:00+00:00": {
+      "SHAP_DE_50hertz_load_actual_entsoe_transparency": 1260.0,
+      "SHAP_DE_amprion_load_actual_entsoe_transparency": 840.0,
+      "SHAP_DE_transnetbw_load_actual_entsoe_transparency": 540.0,
+      "SHAP_DE_tennet_wind_onshore_generation_actual": 300.0,
+      "SHAP_target_load_lag_1": 1740.0,
+      "SHAP_target_load_same_hour_last_week": 600.0,
+      "SHAP_is_weekend": 600.0,
+      "SHAP_target_load_rolling_mean_12": 540.0,
+      "SHAP_target_load_rolling_mean_3": 420.0,
+      "SHAP_target_load_ema_6": 380.0,
+      "SHAP_temperature_pop_wtd": -180.0,
+      "SHAP_cooling_degree_days": -120.0,
+      "SHAP_wind_speed_pop_wtd": 90.0,
+      "SHAP_humidity_pop_wtd": -95.0,
+      "SHAP_solar_radiation_surface_pop_wtd": 150.0,
+      "SHAP_cloud_cover_pop_wtd": -75.0
+    }
+  };
+
+  async function loadInstanceExplanation(){
+    const explainBtn = document.getElementById('explainBtn');
+    const loadingState = document.getElementById('loadingState');
+    const instanceExplanation = document.getElementById('instanceExplanation');
+    
+    explainBtn.disabled = true;
+    explainBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
+    loadingState.style.display = 'block';
+    instanceExplanation.style.display = 'none';
+
+    const dateInput = document.getElementById('instanceDate').value;
+    const hour = parseInt(document.getElementById('instanceHour').value);
+    
+    // Format: 2018-01-02 00:00:00+00:00
+    const hourStr = String(hour).padStart(2, '0');
+    const targetTimestamp = `${dateInput} ${hourStr}:00:00+00:00`;
+
+    try {
+      let prediction = embeddedPredictions.find(p => p.date === targetTimestamp);
+      if (!prediction) {
+        // Try without timezone
+        const targetNoTz = targetTimestamp.replace('+00:00', '');
+        prediction = embeddedPredictions.find(p => p.date && p.date.replace('+00:00', '') === targetNoTz);
+      }
+      if (!prediction) {
+        alert(`No prediction found for ${targetTimestamp}.`);
+        return;
+      }
+
+      // Get SHAP values for this timestamp
+      let shapRow = embeddedSHAP[targetTimestamp];
+      if (!shapRow) {
+        // Try without timezone
+        const targetNoTz = targetTimestamp.replace('+00:00', '');
+        shapRow = embeddedSHAP[targetNoTz] || Object.keys(embeddedSHAP).find(k => k.replace('+00:00', '') === targetNoTz ? embeddedSHAP[k] : null);
+        if (typeof shapRow === 'string') shapRow = embeddedSHAP[shapRow];
+      }
+      if (!shapRow) {
+        alert(`SHAP values not available for ${targetTimestamp}.\n\nPlease try one of the available sample dates.`);
+        return;
+      }
+
+      // Display prediction info
+      const predicted = parseFloat(prediction.predicted);
+      const actual = parseFloat(prediction.actual);
+      const error = parseFloat(prediction.error);
+      const isPeak = prediction.is_peak === 'True' || prediction.is_peak === 'true';
+
+      document.getElementById('predValue').textContent = predicted.toFixed(2) + ' MW';
+      document.getElementById('actualValue').textContent = actual.toFixed(2) + ' MW';
+      document.getElementById('errorValue').textContent = error.toFixed(2) + ' MW';
+      document.getElementById('peakLabel').textContent = isPeak ? 'Peak Load' : 'Normal Load';
+      document.getElementById('peakLabel').style.color = isPeak ? '#ef4444' : '#10b981';
+
+      // Extract and sort feature contributions
+      const contributions = [];
+      Object.keys(shapRow).forEach(key => {
+        const shapValue = shapRow[key];
+        if (typeof shapValue === 'number' && shapValue !== 0) {
+          // SHAP values are in MW units (same as predictions)
+          // The embedded values are already scaled appropriately
+          const featureName = key.replace('SHAP_', '').replace(/_/g, ' ');
+          contributions.push({
+            feature: featureName,
+            value: shapValue
+          });
+        }
+      });
+
+      // Calculate base value: prediction - sum of all SHAP contributions
+      const sumContributions = contributions.reduce((sum, c) => sum + c.value, 0);
+      const baseValue = predicted - sumContributions;
+      document.getElementById('baseValue').textContent = baseValue.toFixed(2);
+
+      // Sort by absolute value and take top 15
+      contributions.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+      const topContributions = contributions.slice(0, 15);
+
+      // Display contributions
+      const contribDiv = document.getElementById('featureContributions');
+      contribDiv.innerHTML = topContributions.map(c => {
+        const isPositive = c.value > 0;
+        return `
+          <div class="contribution-row ${isPositive ? 'positive' : 'negative'}">
+            <span class="contribution-feature">${c.feature}</span>
+            <span class="contribution-value ${isPositive ? 'positive' : 'negative'}">
+              ${isPositive ? '+' : ''}${c.value.toFixed(2)} MW
+            </span>
+          </div>
+        `;
+      }).join('');
+
+      // Final prediction (base + sum of contributions)
+      document.getElementById('finalPrediction').textContent = predicted.toFixed(2);
+
+      // Show explanation
+      loadingState.style.display = 'none';
+      instanceExplanation.style.display = 'block';
+      instanceExplanation.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    } catch(e) {
+      console.error('Error loading instance explanation:', e);
+      loadingState.style.display = 'none';
+      alert(`Error loading explanation: ${e.message}\n\nPlease check the browser console (F12) for more details.`);
+    } finally {
+      explainBtn.disabled = false;
+      explainBtn.innerHTML = '<i class="bi bi-search"></i> Explain This Prediction';
+    }
+  }
+
+  // Load explanation on Enter key
+  document.getElementById('instanceDate').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') loadInstanceExplanation();
+  });
+  document.getElementById('instanceHour').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') loadInstanceExplanation();
+  });
+</script>
+
+<script src="../assets/app.js"></script>
+</body>
+</html>
